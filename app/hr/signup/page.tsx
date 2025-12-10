@@ -19,10 +19,14 @@ const personalDomains = [
 
 export default function HRSignupPage() {
     const router = useRouter();
+
+    // State
     const [fullName, setFullName] = useState("");
+    const [companyName, setCompanyName] = useState("");
     const [workEmail, setWorkEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [companyName, setCompanyName] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -33,10 +37,23 @@ export default function HRSignupPage() {
         setSuccess(null);
         setIsSubmitting(true);
 
+        // Validation
+        if (!fullName || !companyName || !workEmail || !password || !confirmPassword) {
+            setError("Please fill in all fields.");
+            setIsSubmitting(false);
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError("Passwords do not match.");
+            setIsSubmitting(false);
+            return;
+        }
+
         // Email domain validation
         const domain = workEmail.split("@")[1]?.toLowerCase();
         if (!domain || personalDomains.includes(domain)) {
-            setError("Please use your company email address.");
+            setError("Please use your company email (not a personal Gmail/Yahoo address).");
             setIsSubmitting(false);
             return;
         }
@@ -94,74 +111,87 @@ export default function HRSignupPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-            <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-[480px]">
-                <div className="text-center mb-8">
-                    <h1 className="text-2xl font-bold text-slate-900 mb-2">Create your HR account</h1>
-                    <p className="text-slate-600">Set up micro-breaks for your company in under 2 minutes.</p>
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+            <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm border">
+                <div className="text-center mb-6">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Create your HR account</h1>
+                    <p className="text-sm text-gray-500">Set up micro-breaks for your company in under 2 minutes.</p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1" htmlFor="fullName">Full Name</label>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700" htmlFor="fullName">Full Name</label>
                         <input
                             id="fullName"
                             type="text"
                             required
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            className="border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none w-full"
                             placeholder="Jane Doe"
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1" htmlFor="workEmail">Work Email</label>
-                        <input
-                            id="workEmail"
-                            type="email"
-                            required
-                            value={workEmail}
-                            onChange={(e) => setWorkEmail(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            placeholder="jane@company.com"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1" htmlFor="password">Password</label>
-                        <input
-                            id="password"
-                            type="password"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            placeholder="••••••••"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1" htmlFor="companyName">Company Name</label>
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700" htmlFor="companyName">Company Name</label>
                         <input
                             id="companyName"
                             type="text"
                             required
                             value={companyName}
                             onChange={(e) => setCompanyName(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            className="border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none w-full"
                             placeholder="Acme Corp"
                         />
                     </div>
 
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700" htmlFor="workEmail">Work Email</label>
+                        <input
+                            id="workEmail"
+                            type="email"
+                            required
+                            value={workEmail}
+                            onChange={(e) => setWorkEmail(e.target.value)}
+                            className="border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none w-full"
+                            placeholder="jane@company.com"
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700" htmlFor="password">Create Password</label>
+                        <input
+                            id="password"
+                            type="password"
+                            required
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none w-full"
+                            placeholder="••••••••"
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700" htmlFor="confirmPassword">Confirm Password</label>
+                        <input
+                            id="confirmPassword"
+                            type="password"
+                            required
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none w-full"
+                            placeholder="••••••••"
+                        />
+                    </div>
+
                     {error && (
-                        <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg">
+                        <div className="p-3 bg-red-50 text-red-600 text-sm rounded border border-red-100">
                             {error}
                         </div>
                     )}
 
                     {success && (
-                        <div className="p-3 bg-green-50 text-green-600 text-sm rounded-lg">
+                        <div className="p-3 bg-green-50 text-green-600 text-sm rounded border border-green-100">
                             {success}
                         </div>
                     )}
@@ -169,15 +199,16 @@ export default function HRSignupPage() {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium w-full disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                     >
                         {isSubmitting ? "Creating Account..." : "Create Account"}
                     </button>
                 </form>
 
-                <div className="mt-6 text-center text-sm">
-                    <Link href="/hr/login" className="text-slate-600 hover:text-blue-600 transition-colors">
-                        Already have an account? HR Portal
+                <div className="mt-4 text-center text-sm text-gray-500">
+                    Already have an account?{" "}
+                    <Link href="/login" className="text-blue-600 hover:text-blue-700 hover:underline">
+                        Log in
                     </Link>
                 </div>
             </div>
