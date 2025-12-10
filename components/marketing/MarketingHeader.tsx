@@ -84,7 +84,7 @@ export function MarketingHeader() {
                         HR Portal
                     </Link>
                     <Link href="/login" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">
-                        Employee Login
+                        Create Account
                     </Link>
                 </div>
             </div>
