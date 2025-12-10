@@ -1,5 +1,5 @@
-
-import { login, signup } from './actions'
+import Link from "next/link"
+import { login } from './actions'
 
 export default function LoginPage() {
     return (
@@ -19,7 +19,12 @@ export default function LoginPage() {
 
                 <div className="flex flex-col gap-3 mt-6">
                     <button formAction={login} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium">Log in</button>
-                    <button formAction={signup} className="text-sm text-gray-500 hover:text-gray-700 hover:underline">Don&apos;t have an account? Sign up</button>
+                    <div className="text-center">
+                        <span className="text-sm text-gray-500">Don&apos;t have an account? </span>
+                        <Link href="/hr/signup" className="text-sm text-gray-500 hover:text-gray-700 hover:underline">
+                            Sign up
+                        </Link>
+                    </div>
                 </div>
             </form>
         </div>
