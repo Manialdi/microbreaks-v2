@@ -1,7 +1,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Activity, Smile, BarChart3, Heart, Zap, Users, Globe } from "lucide-react"
+import { ArrowRight, Activity, Smile, BarChart3, Heart, Zap, Users, Globe, Settings, Bell, LineChart } from "lucide-react"
 
 export default function LandingPage() {
     return (
@@ -129,8 +129,59 @@ export default function LandingPage() {
                     </div>
                 </div>
             </section>
+
+            {/* How It Works Section */}
+            <section id="how-it-works" className="bg-slate-50 py-24 lg:py-32">
+                <div className="container mx-auto px-4">
+                    <div className="max-w-3xl mx-auto text-center mb-16">
+                        <span className="text-blue-600 font-semibold tracking-wide uppercase text-sm">How Micro Breaks Works</span>
+                        <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mt-3 mb-6 tracking-tight">
+                            Tiny breaks, big impact — in three simple steps.
+                        </h2>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-12 relative">
+                        {/* Connecting Line (Desktop) */}
+                        <div className="hidden md:block absolute top-[2.5rem] left-1/6 right-1/6 h-0.5 bg-slate-200 -z-10" />
+
+                        {/* Step 1 */}
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center mb-8 relative z-10">
+                                <Settings size={32} className="text-blue-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-4">1. Set up your team</h3>
+                            <p className="text-slate-600 leading-relaxed">
+                                HR or team leads invite employees, set default break frequency, and choose the initial exercise sets.
+                            </p>
+                        </div>
+
+                        {/* Step 2 */}
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center mb-8 relative z-10">
+                                <Bell size={32} className="text-amber-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-4">2. Employees get gentle reminders</h3>
+                            <p className="text-slate-600 leading-relaxed">
+                                Friendly, non-intrusive nudges on Chrome or mobile guide employees to take quick 2-minute breaks.
+                            </p>
+                        </div>
+
+                        {/* Step 3 */}
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center mb-8 relative z-10">
+                                <LineChart size={32} className="text-green-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-4">3. Track usage & wellbeing</h3>
+                            <p className="text-slate-600 leading-relaxed">
+                                HR sees participation, trends, and wellness signals to measure impact and adjust cadence.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     )
 }
+
 
 
