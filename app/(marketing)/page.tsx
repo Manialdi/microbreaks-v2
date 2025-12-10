@@ -2,6 +2,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, Activity, Smile, BarChart3, Heart, Zap, Users, Globe, Settings, Bell, LineChart, Clock, Move, LayoutDashboard, CheckCircle, Check } from "lucide-react"
+import { FaqSection } from "@/components/landing/FaqSection"
 
 export default function LandingPage() {
     return (
@@ -369,12 +370,12 @@ export default function LandingPage() {
                     </div>
                 </div>
             </section>
+
+            {/* FAQ Section */}
+            <FaqSection />
         </div>
     )
 }
-
-
-
 
 
 
