@@ -1,11 +1,12 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Activity, Smile, BarChart3 } from "lucide-react"
+import { ArrowRight, Activity, Smile, BarChart3, Heart, Zap, Users, Globe } from "lucide-react"
 
 export default function LandingPage() {
     return (
         <div className="bg-gradient-to-b from-blue-50/50 to-white">
+            {/* Hero Section */}
             <section className="container mx-auto px-4 py-20 lg:py-32">
                 <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
                     {/* Left Column: Text Content */}
@@ -66,7 +67,70 @@ export default function LandingPage() {
                     </div>
                 </div>
             </section>
+
+            {/* Problems & Benefits Section */}
+            <section className="bg-white py-24 lg:py-32">
+                <div className="container mx-auto px-4">
+                    <div className="max-w-3xl mx-auto text-center mb-16">
+                        <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-6 tracking-tight">
+                            Your team sits all day. <br className="hidden md:block" />
+                            Their bodies weren’t designed for it.
+                        </h2>
+                        <p className="text-lg text-slate-600 leading-relaxed">
+                            Prolonged sitting leads to stiffness, eye strain, and burnout.
+                            Micro Breaks introduces simple, science-backed habits throughout the day—without requiring another heavy wellness program.
+                        </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {/* Benefit 1 */}
+                        <div className="p-8 rounded-2xl bg-blue-50/50 border border-blue-100 hover:border-blue-200 hover:shadow-sm transition-all">
+                            <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6">
+                                <Heart size={24} />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-3">Less pain, more comfort</h3>
+                            <p className="text-slate-600 text-sm leading-relaxed">
+                                Gentle micro stretches reduce neck, shoulder, and back strain.
+                            </p>
+                        </div>
+
+                        {/* Benefit 2 */}
+                        <div className="p-8 rounded-2xl bg-amber-50/50 border border-amber-100 hover:border-amber-200 hover:shadow-sm transition-all">
+                            <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-6">
+                                <Zap size={24} />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-3">Sharper focus, better work</h3>
+                            <p className="text-slate-600 text-sm leading-relaxed">
+                                Short breaks improve attention and mental clarity.
+                            </p>
+                        </div>
+
+                        {/* Benefit 3 */}
+                        <div className="p-8 rounded-2xl bg-green-50/50 border border-green-100 hover:border-green-200 hover:shadow-sm transition-all">
+                            <div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mb-6">
+                                <Users size={24} />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-3">Healthier culture, happier teams</h3>
+                            <p className="text-slate-600 text-sm leading-relaxed">
+                                Build trust and engagement through wellbeing.
+                            </p>
+                        </div>
+
+                        {/* Benefit 4 */}
+                        <div className="p-8 rounded-2xl bg-indigo-50/50 border border-indigo-100 hover:border-indigo-200 hover:shadow-sm transition-all">
+                            <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mb-6">
+                                <Globe size={24} />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-3">Wellness that scales</h3>
+                            <p className="text-slate-600 text-sm leading-relaxed">
+                                Works across locations, teams, and time zones.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     )
 }
+
 
