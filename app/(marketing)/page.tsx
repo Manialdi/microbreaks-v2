@@ -14,10 +14,10 @@ export default function LandingPage() {
                     <div className="flex flex-col space-y-8 max-w-2xl text-left">
                         <div className="space-y-4">
                             <h1 className="text-4xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
-                                Micro-breaks that build healthier teams <span className="text-blue-600">automatically</span>
+                                Micro-breaks your team will actually <span className="text-blue-600">use</span>
                             </h1>
-                            <p className="text-lg lg:text-xl text-slate-600 leading-relaxed max-w-md">
-                                Micro Breaks delivers science-backed 2-minute breaks through gentle reminders employees love, with dashboards HR teams trust.
+                            <p className="text-lg lg:text-xl text-slate-600 leading-relaxed max-w-lg">
+                                Micro Breaks delivers science-backed 2-minute breaks through gentle reminders employees love - all powered by a simple Chrome extension - with an HR analytics dashboard teams trust.
                             </p>
                         </div>
 
@@ -30,24 +30,33 @@ export default function LandingPage() {
                             </Link>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-slate-100">
-                            <div className="flex items-center gap-3 text-slate-700">
-                                <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                        <div className="flex flex-col gap-4 pt-8 border-t border-slate-100">
+                            <div className="flex items-start gap-4 text-slate-700">
+                                <div className="p-2 bg-blue-100 rounded-lg text-blue-600 mt-1 shrink-0">
                                     <Activity size={20} />
                                 </div>
-                                <span className="text-sm font-medium">Reduce pain & fatigue</span>
+                                <div>
+                                    <span className="block font-bold text-slate-900">Reduce pain & fatigue</span>
+                                    <span className="text-sm text-slate-600">Quick resets for neck, shoulders, wrists, and posture</span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-3 text-slate-700">
-                                <div className="p-2 bg-green-100 rounded-lg text-green-600">
+                            <div className="flex items-start gap-4 text-slate-700">
+                                <div className="p-2 bg-green-100 rounded-lg text-green-600 mt-1 shrink-0">
                                     <Smile size={20} />
                                 </div>
-                                <span className="text-sm font-medium">Boost focus & mood</span>
+                                <div>
+                                    <span className="block font-bold text-slate-900">Boost focus & mood</span>
+                                    <span className="text-sm text-slate-600">2-minute breaks proven to restore attention</span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-3 text-slate-700">
-                                <div className="p-2 bg-purple-100 rounded-lg text-purple-600">
+                            <div className="flex items-start gap-4 text-slate-700">
+                                <div className="p-2 bg-purple-100 rounded-lg text-purple-600 mt-1 shrink-0">
                                     <BarChart3 size={20} />
                                 </div>
-                                <span className="text-sm font-medium">Give HR real insights</span>
+                                <div>
+                                    <span className="block font-bold text-slate-900">Give HR real insights</span>
+                                    <span className="text-sm text-slate-600">Track participation & wellbeing trends</span>
+                                </div>
                             </div>
                         </div>
                     </div>
