@@ -20,6 +20,7 @@ export default async function AppLayout({
                 <div className="font-bold text-xl mb-8">Microbreaks App</div>
                 <nav className="space-y-2">
                     <a href="/dashboard" className="block px-4 py-2 bg-blue-50 text-blue-600 rounded-md">Dashboard</a>
+                    <a href="/invite" className="block px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-md">Invite Employees</a>
                     <a href="/settings" className="block px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-md">Settings</a>
                 </nav>
             </aside>
