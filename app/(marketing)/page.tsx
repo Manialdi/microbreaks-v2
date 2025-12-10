@@ -1,0 +1,72 @@
+
+import Image from "next/image"
+import Link from "next/link"
+import { ArrowRight, Activity, Smile, BarChart3 } from "lucide-react"
+
+export default function LandingPage() {
+    return (
+        <div className="bg-gradient-to-b from-blue-50/50 to-white">
+            <section className="container mx-auto px-4 py-20 lg:py-32">
+                <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+                    {/* Left Column: Text Content */}
+                    <div className="flex flex-col space-y-8 max-w-2xl text-left">
+                        <div className="space-y-4">
+                            <h1 className="text-4xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
+                                Micro-breaks that build healthier teams <span className="text-blue-600">automatically</span>
+                            </h1>
+                            <p className="text-lg lg:text-xl text-slate-600 leading-relaxed max-w-md">
+                                Micro Breaks delivers science-backed 2-minute breaks through gentle reminders employees love, with dashboards HR teams trust.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                            <Link href="/login" className="inline-flex justify-center items-center px-8 py-4 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-500/25 active:scale-95 text-base">
+                                Start free for your team
+                            </Link>
+                            <Link href="#how-it-works" className="inline-flex justify-center items-center px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-xl font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 text-base">
+                                See how it works
+                            </Link>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-slate-100">
+                            <div className="flex items-center gap-3 text-slate-700">
+                                <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                                    <Activity size={20} />
+                                </div>
+                                <span className="text-sm font-medium">Reduce pain & fatigue</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-slate-700">
+                                <div className="p-2 bg-green-100 rounded-lg text-green-600">
+                                    <Smile size={20} />
+                                </div>
+                                <span className="text-sm font-medium">Boost focus & mood</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-slate-700">
+                                <div className="p-2 bg-purple-100 rounded-lg text-purple-600">
+                                    <BarChart3 size={20} />
+                                </div>
+                                <span className="text-sm font-medium">Give HR real insights</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column: Hero Image */}
+                    <div className="relative lg:h-[600px] w-full flex items-center justify-center">
+                        <div className="relative w-full aspect-square lg:aspect-auto h-full rounded-2xl overflow-hidden shadow-2xl border border-slate-100 bg-white">
+                            <Image
+                                src="/hero-dashboard.png"
+                                alt="Micro Breaks Dashboard Interface"
+                                fill
+                                className="object-cover object-left-top"
+                                priority
+                            />
+                        </div>
+                        {/* Decorative background element */}
+                        <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-200/20 blur-3xl rounded-full pointer-events-none" />
+                    </div>
+                </div>
+            </section>
+        </div>
+    )
+}
+
