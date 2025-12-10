@@ -1,7 +1,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Activity, Smile, BarChart3, Heart, Zap, Users, Globe, Settings, Bell, LineChart, Clock, Move, LayoutDashboard } from "lucide-react"
+import { ArrowRight, Activity, Smile, BarChart3, Heart, Zap, Users, Globe, Settings, Bell, LineChart, Clock, Move, LayoutDashboard, CheckCircle } from "lucide-react"
 
 export default function LandingPage() {
     return (
@@ -225,9 +225,80 @@ export default function LandingPage() {
                     </div>
                 </div>
             </section>
+
+            {/* Built for HR Section */}
+            <section className="bg-slate-50 py-24 lg:py-32">
+                <div className="container mx-auto px-4">
+                    <div className="max-w-3xl mx-auto text-center mb-16">
+                        <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-6 tracking-tight">
+                            Built for HR, loved by employees.
+                        </h2>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {/* For HR & People Teams */}
+                        <div className="p-8 rounded-2xl bg-white border border-slate-200">
+                            <h3 className="text-xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-100">For HR & People Teams</h3>
+                            <ul className="space-y-4">
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle size={20} className="text-blue-600 mt-1 shrink-0" />
+                                    <span className="text-slate-600 text-sm">Launch a wellness initiative in days</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle size={20} className="text-blue-600 mt-1 shrink-0" />
+                                    <span className="text-slate-600 text-sm">See real participation, not vanity metrics</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle size={20} className="text-blue-600 mt-1 shrink-0" />
+                                    <span className="text-slate-600 text-sm">Support wellbeing with zero admin overhead</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {/* For People Leaders */}
+                        <div className="p-8 rounded-2xl bg-white border border-slate-200">
+                            <h3 className="text-xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-100">For People Leaders</h3>
+                            <ul className="space-y-4">
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle size={20} className="text-amber-600 mt-1 shrink-0" />
+                                    <span className="text-slate-600 text-sm">Reduce burnout risk across your team</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle size={20} className="text-amber-600 mt-1 shrink-0" />
+                                    <span className="text-slate-600 text-sm">Encourage healthy habits during long workdays</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle size={20} className="text-amber-600 mt-1 shrink-0" />
+                                    <span className="text-slate-600 text-sm">Build a culture of care and sustainability</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {/* For Employees */}
+                        <div className="p-8 rounded-2xl bg-white border border-slate-200">
+                            <h3 className="text-xl font-bold text-slate-900 mb-6 pb-4 border-b border-slate-100">For Employees</h3>
+                            <ul className="space-y-4">
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle size={20} className="text-green-600 mt-1 shrink-0" />
+                                    <span className="text-slate-600 text-sm">Reduce stiffness and fatigue</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle size={20} className="text-green-600 mt-1 shrink-0" />
+                                    <span className="text-slate-600 text-sm">Feel better throughout the day with small habits</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle size={20} className="text-green-600 mt-1 shrink-0" />
+                                    <span className="text-slate-600 text-sm">No pressure or guilt — just gentle nudges</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     )
 }
+
 
 
 
