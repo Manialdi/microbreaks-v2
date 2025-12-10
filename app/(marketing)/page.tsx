@@ -1,7 +1,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Activity, Smile, BarChart3, Heart, Zap, Users, Globe, Settings, Bell, LineChart, Clock, Move, LayoutDashboard, CheckCircle, Check } from "lucide-react"
+import { ArrowRight, Activity, Smile, BarChart3, Heart, Zap, Users, Globe, Settings, Bell, LineChart, Clock, Move, LayoutDashboard, CheckCircle, Check, Download } from "lucide-react"
 import { FaqSection } from "@/components/landing/FaqSection"
 
 export default function LandingPage() {
@@ -131,96 +131,69 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* How It Works Section */}
+            {/* How Micro Breaks Works Section */}
             <section id="how-it-works" className="bg-slate-50 py-24 lg:py-32">
                 <div className="container mx-auto px-4">
                     <div className="max-w-3xl mx-auto text-center mb-16">
-                        <span className="text-blue-600 font-semibold tracking-wide uppercase text-sm">How Micro Breaks Works</span>
+                        <span className="text-blue-600 font-semibold tracking-wide uppercase text-sm">HOW MICRO BREAKS WORKS</span>
                         <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mt-3 mb-6 tracking-tight">
-                            Tiny breaks, big impact — in three simple steps.
+                            Tiny breaks, big impact — in one simple flow.
                         </h2>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-12 relative">
-                        {/* Connecting Line (Desktop) */}
-                        <div className="hidden md:block absolute top-[2.5rem] left-1/6 right-1/6 h-0.5 bg-slate-200 -z-10" />
-
+                    <div className="grid md:grid-cols-2 xl:grid-cols-5 gap-8">
                         {/* Step 1 */}
-                        <div className="flex flex-col items-center text-center">
-                            <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center mb-8 relative z-10">
-                                <Settings size={32} className="text-blue-600" />
+                        <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all text-center group">
+                            <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6 mx-auto group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                <Users size={24} />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-4">1. Set up your team</h3>
-                            <p className="text-slate-600 leading-relaxed">
-                                HR or team leads invite employees, set default break frequency, and choose the initial exercise sets.
+                            <h3 className="text-lg font-bold text-slate-900 mb-3">1. Set up your team</h3>
+                            <p className="text-slate-600 text-sm leading-relaxed">
+                                HR or team leads add employees, set default break frequency, and choose the right exercise categories for the company.
                             </p>
                         </div>
 
                         {/* Step 2 */}
-                        <div className="flex flex-col items-center text-center">
-                            <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center mb-8 relative z-10">
-                                <Bell size={32} className="text-amber-600" />
+                        <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all text-center group">
+                            <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-6 mx-auto group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                                <Download size={24} />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-4">2. Employees get gentle reminders</h3>
-                            <p className="text-slate-600 leading-relaxed">
-                                Friendly, non-intrusive nudges on Chrome or mobile guide employees to take quick 2-minute breaks.
+                            <h3 className="text-lg font-bold text-slate-900 mb-3">2. Employees install the Chrome extension</h3>
+                            <p className="text-slate-600 text-sm leading-relaxed">
+                                Each employee receives an email invite with a link to download the Micro Breaks Chrome extension and log in using their company credentials.
                             </p>
                         </div>
 
                         {/* Step 3 */}
-                        <div className="flex flex-col items-center text-center">
-                            <div className="w-20 h-20 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center mb-8 relative z-10">
-                                <LineChart size={32} className="text-green-600" />
+                        <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all text-center group">
+                            <div className="w-14 h-14 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-6 mx-auto group-hover:bg-green-600 group-hover:text-white transition-colors">
+                                <Bell size={24} />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-4">3. Track usage & wellbeing</h3>
-                            <p className="text-slate-600 leading-relaxed">
-                                HR sees participation, trends, and wellness signals to measure impact and adjust cadence.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Features Section */}
-            <section className="bg-white py-24 lg:py-32">
-                <div className="container mx-auto px-4">
-                    <div className="max-w-3xl mx-auto text-center mb-16">
-                        <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-6 tracking-tight">
-                            Everything you need to build better workday habits.
-                        </h2>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {/* Feature Card 1 */}
-                        <div className="group p-8 rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                            <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                <Clock size={28} />
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-3">Smart Break Reminders</h3>
-                            <p className="text-slate-600 leading-relaxed">
-                                Reminders adapt to your team’s rhythm. Set default schedules or let employees customize. Subtle, respectful, never disruptive.
+                            <h3 className="text-lg font-bold text-slate-900 mb-3">3. Employees get smart, non-intrusive nudges</h3>
+                            <p className="text-slate-600 text-sm leading-relaxed">
+                                Once logged in, employees receive gentle reminders on Chrome to take quick 2-minute breaks - subtle, respectful, never disruptive. Employees can snooze the reminders.
                             </p>
                         </div>
 
-                        {/* Feature Card 2 */}
-                        <div className="group p-8 rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                            <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-6 group-hover:bg-amber-600 group-hover:text-white transition-colors">
-                                <Move size={28} />
+                        {/* Step 4 */}
+                        <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all text-center group">
+                            <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-6 mx-auto group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                                <Activity size={24} />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-3">2-Minute Guided Exercises</h3>
-                            <p className="text-slate-600 leading-relaxed">
-                                Simple stretches and resets designed for eyes, neck, shoulders, wrists, and posture. No equipment. No learning curve.
+                            <h3 className="text-lg font-bold text-slate-900 mb-3">4. Do simple 2-minute guided exercises</h3>
+                            <p className="text-slate-600 text-sm leading-relaxed">
+                                Micro-stretches for eyes, neck, shoulders, wrists, back, and posture. No equipment, no learning curve — just quick resets at the desk.
                             </p>
                         </div>
 
-                        {/* Feature Card 3 */}
-                        <div className="group p-8 rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                            <div className="w-14 h-14 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-6 group-hover:bg-green-600 group-hover:text-white transition-colors">
-                                <LayoutDashboard size={28} />
+                        {/* Step 5 */}
+                        <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all text-center group">
+                            <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-6 mx-auto group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                <BarChart3 size={24} />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-3">HR Wellness Dashboard</h3>
-                            <p className="text-slate-600 leading-relaxed">
-                                Understand adoption, participation, and wellbeing trends across teams. Spot burnout risk early with data-backed insights.
+                            <h3 className="text-lg font-bold text-slate-900 mb-3">5. Track team wellbeing with the HR Dashboard</h3>
+                            <p className="text-slate-600 text-sm leading-relaxed">
+                                HR sees participation, engagement patterns, and early burnout signals. Data-backed insights help measure impact and improve wellness initiatives.
                             </p>
                         </div>
                     </div>
