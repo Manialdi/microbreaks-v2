@@ -1,11 +1,22 @@
 import Link from "next/link"
 import { login } from './actions'
 
-export default function LoginPage() {
+export default async function LoginPage(props: {
+    searchParams: Promise<{ error?: string }>
+}) {
+    const searchParams = await props.searchParams;
+    const error = searchParams.error;
+
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50">
             <form className="flex flex-col gap-4 p-8 bg-white border rounded-lg shadow-md w-full max-w-sm">
                 <h1 className="text-2xl font-bold mb-4">Welcome Back</h1>
+
+                {error && (
+                    <div className="p-3 bg-red-50 text-red-600 text-sm rounded border border-red-100 mb-2">
+                        {error}
+                    </div>
+                )}
 
                 <div className="flex flex-col gap-2">
                     <label htmlFor="email" className="text-sm font-medium text-gray-700">Email</label>
@@ -17,9 +28,16 @@ export default function LoginPage() {
                     <input id="password" name="password" type="password" required className="border p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••••••" />
                 </div>
 
-                <div className="flex flex-col gap-3 mt-6">
-                    <button formAction={login} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium">Log in</button>
+                <div className="flex flex-col gap-4 mt-6">
+                    <button formAction={login} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-medium w-full">Log in</button>
+
                     <div className="text-center">
+                        <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                            Forgot password?
+                        </Link>
+                    </div>
+
+                    <div className="text-center pt-2 border-t border-gray-100">
                         <span className="text-sm text-gray-500">Don&apos;t have an account? </span>
                         <Link href="/hr/signup" className="text-sm text-gray-500 hover:text-gray-700 hover:underline">
                             Sign up
