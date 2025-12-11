@@ -1,0 +1,460 @@
+"use client";
+
+import { useState, useRef } from "react";
+import {
+    Search, MoreVertical, Copy, Upload, Mail, X,
+    RotateCcw, Trash2, Flame, CheckCircle
+} from "lucide-react";
+import Papa from "papaparse";
+import {
+    BarChart, Bar, XAxis, Tooltip, ResponsiveContainer,
+    PieChart, Pie, Cell
+} from "recharts";
+
+// --- Mock Data ---
+
+const MOCK_EMPLOYEES = [
+    {
+        id: "1",
+        name: "Jane Doe",
+        email: "jane@company.com",
+        status: "Active",
+        sessionsToday: 4,
+        sessionsThisWeek: 18,
+        totalSessions: 122,
+        lastActive: "2025-12-10T08:33:00Z",
+        createdAt: "2025-03-12T11:02:00Z",
+        streakDays: 6,
+        trend7Days: [3, 2, 4, 1, 5, 3, 4],
+        exerciseBreakdown: { neck: 32, wrist: 18, eye: 20, posture: 22, breathing: 8 }
+    },
+    {
+        id: "2",
+        name: "John Smith",
+        email: "john@company.com",
+        status: "Invited",
+        sessionsToday: 0,
+        sessionsThisWeek: 0,
+        totalSessions: 0,
+        lastActive: null,
+        createdAt: "2025-12-11T09:00:00Z",
+        streakDays: 0,
+        trend7Days: [0, 0, 0, 0, 0, 0, 0],
+        exerciseBreakdown: { neck: 0, wrist: 0, eye: 0, posture: 0, breathing: 0 }
+    },
+    {
+        id: "3",
+        name: "Alice Johnson",
+        email: "alice@company.com",
+        status: "Active",
+        sessionsToday: 2,
+        sessionsThisWeek: 10,
+        totalSessions: 45,
+        lastActive: "2025-12-11T14:15:00Z",
+        createdAt: "2025-11-01T10:00:00Z",
+        streakDays: 3,
+        trend7Days: [1, 2, 1, 3, 0, 1, 2],
+        exerciseBreakdown: { neck: 40, wrist: 10, eye: 30, posture: 10, breathing: 10 }
+    },
+    {
+        id: "4",
+        name: "Bob Brown",
+        email: "bob@company.com",
+        status: "Disabled",
+        sessionsToday: 0,
+        sessionsThisWeek: 2,
+        totalSessions: 89,
+        lastActive: "2025-12-05T09:00:00Z",
+        createdAt: "2025-08-15T08:30:00Z",
+        streakDays: 0,
+        trend7Days: [0, 0, 0, 0, 0, 0, 0],
+        exerciseBreakdown: { neck: 20, wrist: 20, eye: 20, posture: 20, breathing: 20 }
+    },
+];
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+
+// --- Types ---
+type Employee = typeof MOCK_EMPLOYEES[0];
+
+export default function EmployeesPage() {
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("All");
+    const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+    const [inviteEmails, setInviteEmails] = useState("");
+    const [isPreviewingInvite, setIsPreviewingInvite] = useState(false);
+    const [parsedEmails, setParsedEmails] = useState<string[]>([]);
+    const [csvFile, setCsvFile] = useState<File | null>(null);
+    const [csvPreview, setCsvPreview] = useState<{ valid: number, invalid: number } | null>(null);
+
+    // --- Actions ---
+
+    const handleInvitePreview = () => {
+        const emails = inviteEmails.split(',').map(e => e.trim()).filter(e => e.length > 0 && e.includes('@'));
+        // Basic validation mock
+        setParsedEmails(emails);
+        if (emails.length > 0) setIsPreviewingInvite(true);
+    };
+
+    const handleSendInvite = () => {
+        // Mock sending
+        alert(`Invites sent to ${parsedEmails.length} emails!`);
+        setIsPreviewingInvite(false);
+        setInviteEmails("");
+    };
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText("https://micro-breaks.com/signup?company=mock-id");
+        alert("Invite link copied!");
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setCsvFile(file);
+            Papa.parse(file, {
+                complete: (results) => {
+                    // Mock validation logic
+                    setCsvPreview({ valid: results.data.length - 1, invalid: 0 }); // Subtract header
+                },
+                header: true
+            });
+        }
+    };
+
+    // --- Filtering ---
+    const filteredEmployees = MOCK_EMPLOYEES.filter(emp => {
+        const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) || emp.email.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === "All" || emp.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
+
+    return (
+        <div className="space-y-8 relative">
+            {/* SECTION 1: Page Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900">Manage Employees</h1>
+                    <p className="text-gray-500 mt-1">Invite employees and manage their activity across the Micro-Breaks platform.</p>
+                </div>
+                <div className="flex gap-3">
+                    <button
+                        onClick={handleCopyLink}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition shadow-sm"
+                    >
+                        <Copy className="h-4 w-4" /> Copy Invite Link
+                    </button>
+                    <button
+                        onClick={() => document.getElementById('invite-card')?.scrollIntoView({ behavior: 'smooth' })}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition shadow-sm"
+                    >
+                        <Mail className="h-4 w-4" /> Invite Employees
+                    </button>
+                </div>
+            </div>
+
+            {/* SECTION 2: Invite Card */}
+            <div id="invite-card" className="bg-white rounded-xl shadow-sm border p-6 space-y-8">
+                {/* A. Email Invitation */}
+                <div className="space-y-4">
+                    <div className="flex justify-between items-baseline">
+                        <label className="text-sm font-semibold text-gray-900">Invite New Employees</label>
+                        <span className="text-xs text-gray-500">Enter email addresses separated by commas</span>
+                    </div>
+                    <div className="flex gap-4">
+                        <input
+                            type="text"
+                            className="flex-1 border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                            placeholder="john@company.com, jane@company.com"
+                            value={inviteEmails}
+                            onChange={(e) => setInviteEmails(e.target.value)}
+                        />
+                        <button
+                            onClick={handleInvitePreview}
+                            className="bg-gray-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition text-sm whitespace-nowrap"
+                        >
+                            Preview Invite →
+                        </button>
+                    </div>
+                </div>
+
+                <hr className="border-gray-100" />
+
+                {/* B. CSV Upload */}
+                <div>
+                    <div className="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Bulk Upload via CSV</h3>
+                            <p className="text-sm text-gray-500 mt-1">Upload a CSV with two columns: Name and Email.</p>
+                        </div>
+                        <button className="text-sm text-blue-600 hover:underline">Download sample CSV</button>
+                    </div>
+
+                    <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:bg-gray-50 transition cursor-pointer relative">
+                        <input
+                            type="file"
+                            accept=".csv"
+                            onChange={handleFileUpload}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <Upload className="h-8 w-8 text-gray-400 mx-auto mb-3" />
+                        {csvFile ? (
+                            <div className="text-sm text-gray-900 font-medium">
+                                Selected: {csvFile.name}
+                                {csvPreview && <span className="block text-green-600 mt-1">{csvPreview.valid} valid rows ready to import</span>}
+                            </div>
+                        ) : (
+                            <>
+                                <p className="text-sm font-medium text-gray-900">Click to upload or drag and drop</p>
+                                <p className="text-xs text-gray-500 mt-1">UTF-8 encoded CSV only</p>
+                            </>
+                        )}
+                    </div>
+                    {csvFile && (
+                        <div className="mt-4 flex justify-end">
+                            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">Import Employees</button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* SECTION 4: Employee Directory Table */}
+            <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+                <div className="p-6 border-b flex flex-col md:flex-row justify-between items-center gap-4">
+                    <h2 className="text-lg font-bold text-gray-900">Employee Directory</h2>
+                    <div className="flex gap-4 w-full md:w-auto">
+                        <div className="relative flex-1 md:w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search by name or email..."
+                                className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <select
+                            className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <option value="All">All Status</option>
+                            <option value="Active">Active</option>
+                            <option value="Invited">Invited</option>
+                            <option value="Disabled">Disabled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-gray-50 text-gray-500 text-xs font-semibold uppercase tracking-wider">
+                                <th className="px-6 py-4">Name</th>
+                                <th className="px-6 py-4">Email</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4">Sessions (Today)</th>
+                                <th className="px-6 py-4">Last Active</th>
+                                <th className="px-6 py-4">Created At</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {filteredEmployees.map((emp) => (
+                                <tr
+                                    key={emp.id}
+                                    className="hover:bg-gray-50 transition cursor-pointer"
+                                    onClick={() => setSelectedEmployee(emp)}
+                                >
+                                    <td className="px-6 py-4 font-semibold text-gray-900">{emp.name}</td>
+                                    <td className="px-6 py-4 text-gray-500 text-sm">{emp.email}</td>
+                                    <td className="px-6 py-4">
+                                        <Badge status={emp.status} />
+                                    </td>
+                                    <td className="px-6 py-4 text-gray-900 font-medium">{emp.sessionsToday}</td>
+                                    <td className="px-6 py-4 text-gray-500 text-sm">{emp.lastActive ? new Date(emp.lastActive).toLocaleDateString() : '-'}</td>
+                                    <td className="px-6 py-4 text-gray-500 text-sm">{new Date(emp.createdAt).toLocaleDateString()}</td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button className="text-gray-400 hover:text-gray-600 p-1">
+                                            <MoreVertical className="h-4 w-4" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* SECTION 5: Side Drawer */}
+            {selectedEmployee && (
+                <div className="fixed inset-0 z-50 flex justify-end">
+                    <div
+                        className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                        onClick={() => setSelectedEmployee(null)}
+                    ></div>
+                    <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col">
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-900">{selectedEmployee.name}</h2>
+                                <p className="text-sm text-gray-500">{selectedEmployee.email}</p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedEmployee(null)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition"
+                            >
+                                <X className="h-5 w-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-8 flex-1">
+                            {/* A. Quick Stats */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <StatCard label="Sessions Today" value={selectedEmployee.sessionsToday} />
+                                <StatCard label="Total Sessions" value={selectedEmployee.totalSessions} />
+                                <StatCard
+                                    label="Streak"
+                                    value={
+                                        <div className="flex items-center gap-1">
+                                            <span>{selectedEmployee.streakDays} days</span>
+                                            {selectedEmployee.streakDays > 5 && <Flame className="h-4 w-4 text-orange-500 fill-orange-500" />}
+                                        </div>
+                                    }
+                                />
+                                <StatCard label="Last 7 Days" value={selectedEmployee.sessionsThisWeek} />
+                            </div>
+
+                            {/* B. Activity Chart */}
+                            <div>
+                                <h3 className="text-sm font-semibold text-gray-900 mb-4">7-Day Activity Trend</h3>
+                                <div className="h-40 w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={selectedEmployee.trend7Days.map((val, i) => ({ day: i, sessions: val }))}>
+                                            <XAxis dataKey="day" hide />
+                                            <Tooltip />
+                                            <Bar dataKey="sessions" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+
+                            {/* C. Exercise Breakdown */}
+                            <div>
+                                <h3 className="text-sm font-semibold text-gray-900 mb-4">Exercise Breakdown</h3>
+                                <div className="h-48 w-full flex items-center justify-center">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={Object.entries(selectedEmployee.exerciseBreakdown).map(([name, value]) => ({ name, value }))}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={80}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                            >
+                                                {Object.entries(selectedEmployee.exerciseBreakdown).map((_, index) => (
+                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="flex flex-wrap gap-2 justify-center mt-2">
+                                    {Object.keys(selectedEmployee.exerciseBreakdown).map((key, i) => (
+                                        <div key={key} className="flex items-center gap-1 text-xs text-gray-500 capitalize">
+                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
+                                            {key}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* D. Timestamps */}
+                            <div className="grid grid-cols-2 gap-4 text-sm border-t pt-4">
+                                <div>
+                                    <p className="text-gray-500">Last Active</p>
+                                    <p className="font-medium">{selectedEmployee.lastActive ? new Date(selectedEmployee.lastActive).toLocaleString() : 'Never'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-gray-500">Joined On</p>
+                                    <p className="font-medium">{new Date(selectedEmployee.createdAt).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* E. Action Buttons */}
+                        <div className="mt-8 space-y-3 pt-6 border-t">
+                            <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition">
+                                <Mail className="h-4 w-4" /> Send Reminder Email
+                            </button>
+                            <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition">
+                                <RotateCcw className="h-4 w-4" /> Reset Password
+                            </button>
+                            <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium transition">
+                                <Trash2 className="h-4 w-4" /> Deactivate Access
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Preview Invite Modal */}
+            {isPreviewingInvite && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+                        <h3 className="text-lg font-bold mb-4">Confirm Invitations</h3>
+                        <p className="text-sm text-gray-500 mb-4">We will send an invitation to the following {parsedEmails.length} people:</p>
+                        <div className="max-h-40 overflow-y-auto border rounded-lg p-2 mb-6 bg-gray-50">
+                            {parsedEmails.map(email => (
+                                <div key={email} className="flex items-center gap-2 text-sm text-gray-700 py-1">
+                                    <CheckCircle className="h-3 w-3 text-green-500" /> {email}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setIsPreviewingInvite(false)}
+                                className="flex-1 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSendInvite}
+                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition"
+                            >
+                                Send Invites
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// --- Helper Components ---
+
+function Badge({ status }: { status: string }) {
+    const styles = {
+        Active: "bg-green-100 text-green-800",
+        Invited: "bg-blue-100 text-blue-800",
+        Disabled: "bg-gray-100 text-gray-800",
+    }[status] || "bg-gray-100 text-gray-800";
+
+    return (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles}`}>
+            {status}
+        </span>
+    );
+}
+
+function StatCard({ label, value }: { label: string, value: React.ReactNode }) {
+    return (
+        <div className="bg-gray-50 p-4 rounded-lg border">
+            <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">{label}</div>
+            <div className="text-xl font-bold text-gray-900">{value}</div>
+        </div>
+    );
+}
