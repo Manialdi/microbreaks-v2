@@ -223,9 +223,9 @@ export default function EmployeesPage() {
             // Better to fetch just one or simply reload.
             window.location.reload();
 
-        } catch (err) {
-            console.error(err);
-            showToast("We couldn't send the invites. Please try again or contact support.", 'error');
+        } catch (err: any) {
+            console.error("Invite Error:", err);
+            showToast(`Error: ${err.message || "We couldn't send the invites."}`, 'error');
         }
     };
 
