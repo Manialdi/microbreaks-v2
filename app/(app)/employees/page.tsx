@@ -191,14 +191,33 @@ export default function EmployeesPage() {
 
         try {
             const promises = validEmails.map(async (email) => {
-                // Upsert Employee
-                const { error: empError } = await supabase
+                // Check if employee exists
+                const { data: existing } = await supabase
                     .from('employees')
-                    .upsert({
-                        company_id: companyId,
-                        email: email,
-                        status: 'invited'
-                    }, { onConflict: 'company_id, email' });
+                    .select('id')
+                    .eq('company_id', companyId)
+                    .eq('email', email)
+                    .single();
+
+                let empError;
+                if (existing) {
+                    // Update
+                    const { error } = await supabase
+                        .from('employees')
+                        .update({ status: 'invited' })
+                        .eq('id', existing.id);
+                    empError = error;
+                } else {
+                    // Insert
+                    const { error } = await supabase
+                        .from('employees')
+                        .insert({
+                            company_id: companyId,
+                            email: email,
+                            status: 'invited'
+                        });
+                    empError = error;
+                }
 
                 if (empError) throw empError;
 
@@ -302,26 +321,42 @@ export default function EmployeesPage() {
         try {
             const { valid } = csvPreview;
 
-            const employeesToUpsert = valid.map(r => ({
-                company_id: companyId,
-                email: r.email,
-                name: r.name,
-                employee_id: r.employee_id,
-                department: r.department,
-                status: 'invited'
-            }));
+            // Sequential upsert/check pattern to avoid missing constraint error
+            for (const r of valid) {
+                const { data: existing } = await supabase
+                    .from('employees')
+                    .select('id')
+                    .eq('company_id', companyId)
+                    .eq('email', r.email)
+                    .single();
 
-            const { error } = await supabase.from('employees').upsert(employeesToUpsert, { onConflict: 'company_id, email' });
-            if (error) throw error;
+                if (existing) {
+                    await supabase.from('employees').update({
+                        name: r.name,
+                        employee_id: r.employee_id,
+                        department: r.department,
+                        status: 'invited'
+                    }).eq('id', existing.id);
+                } else {
+                    await supabase.from('employees').insert({
+                        company_id: companyId,
+                        email: r.email,
+                        name: r.name,
+                        employee_id: r.employee_id,
+                        department: r.department,
+                        status: 'invited'
+                    });
+                }
+            }
 
             showToast(`Imported ${valid.length} employees successfully.`);
             setCsvFile(null);
             setCsvPreview(null);
             window.location.reload();
 
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            showToast("Something went wrong while importing employees. Please try again.", 'error');
+            showToast(`Error importing: ${err.message || 'Unknown error'}`, 'error');
         }
     };
 
