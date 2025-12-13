@@ -77,10 +77,18 @@ export default function EmployeesPage() {
 
                 const cId = profile.company_id;
                 // @ts-ignore
-                const domain = profile.companies?.domain || null;
+                let domain = profile.companies?.domain;
+
+                // Fallback: Use HR User's email domain if DB value is missing
+                if (!domain && user.email) {
+                    const parts = user.email.split('@');
+                    if (parts.length === 2) {
+                        domain = parts[1];
+                    }
+                }
 
                 setCompanyId(cId);
-                setCompanyDomain(domain);
+                setCompanyDomain(domain || null);
 
                 // B. Fetch Employees
                 const { data: emps, error } = await supabase
