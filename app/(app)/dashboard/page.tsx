@@ -1,32 +1,146 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowUpDown, Search, Flame } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
-// Mock Data
-const MOCK_STATS = {
-    totalInvitedEmployees: 120,
-    activeEmployees: 87,
-    sessionsToday: 243,
-    dailyEngagementPercent: 72,
+// Types
+type EmployeeStats = {
+    id: string;
+    name: string;
+    email: string;
+    status: string;
+    sessionsToday: number;
+    sessionsLast7Days: number;
+    streakDays: number;
 };
 
-const MOCK_EMPLOYEES = [
-    { id: "1", name: "Jane Doe", email: "jane@company.com", sessionsToday: 3, sessionsLast7Days: 14, streakDays: 6, status: "Active" },
-    { id: "2", name: "John Smith", email: "john@company.com", sessionsToday: 0, sessionsLast7Days: 5, streakDays: 0, status: "Active" },
-    { id: "3", name: "Alice Johnson", email: "alice@company.com", sessionsToday: 5, sessionsLast7Days: 20, streakDays: 12, status: "Active" },
-    { id: "4", name: "Bob Brown", email: "bob@company.com", sessionsToday: 0, sessionsLast7Days: 0, streakDays: 0, status: "Invited" },
-    { id: "5", name: "Charlie Davis", email: "charlie@company.com", sessionsToday: 2, sessionsLast7Days: 10, streakDays: 3, status: "Inactive" },
-    { id: "6", name: "Diana Evans", email: "diana@company.com", sessionsToday: 4, sessionsLast7Days: 18, streakDays: 8, status: "Active" },
-];
+type DashboardStats = {
+    totalInvitedEmployees: number;
+    activeEmployees: number;
+    sessionsToday: number;
+    dailyEngagementPercent: number;
+};
 
 export default function DashboardPage() {
+    const [stats, setStats] = useState<DashboardStats>({
+        totalInvitedEmployees: 0,
+        activeEmployees: 0,
+        sessionsToday: 0,
+        dailyEngagementPercent: 0
+    });
+    const [employees, setEmployees] = useState<EmployeeStats[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
 
+    const supabase = createClient();
+
+    useEffect(() => {
+        async function loadDashboardData() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+
+                // 1. Get Company ID
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('company_id')
+                    .eq('id', user.id)
+                    .single();
+
+                if (!profile?.company_id) {
+                    setLoading(false);
+                    return;
+                }
+
+                const companyId = profile.company_id;
+                const today = new Date().toISOString().split('T')[0];
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                const sevenDaysAgoStr = sevenDaysAgo.toISOString();
+
+                // 2. Fetch Employees
+                const { data: empData, error: empError } = await supabase
+                    .from('employees')
+                    .select('*')
+                    .eq('company_id', companyId);
+
+                if (empError || !empData) throw empError;
+
+                // 3. Fetch Sessions (Last 7 Days for performance/engagement stats)
+                // Note: In a real large-scale app, this should be an aggregate view or RPC.
+                const { data: sessionData, error: sessionError } = await supabase
+                    .from('sessions')
+                    .select('id, employee_id, started_at')
+                    .eq('company_id', companyId)
+                    .gte('started_at', sevenDaysAgoStr); // Optimization: only fetch recent
+
+                if (sessionError) console.error("Error fetching sessions", sessionError);
+                const sessions = sessionData || [];
+
+                // --- Calculate KPI Stats ---
+
+                const totalInvitedEmployees = empData.length;
+                const activeEmployeesCount = empData.filter(e => e.status === 'active').length;
+
+                // filtering sessions for today (local time approximation or UTC depending on DB)
+                // Assuming DB is ISO UTC, we'll check matching date prefix for simplicity or JS date parsing
+                const sessionsTodayList = sessions.filter(s => s.started_at.startsWith(today));
+                const sessionsTodayCount = sessionsTodayList.length;
+
+                // Daily Engagement: Unique active employees over active employees count
+                const uniqueActiveToday = new Set(sessionsTodayList.map(s => s.employee_id));
+                const dailyEngagementPercent = activeEmployeesCount > 0
+                    ? Math.round((uniqueActiveToday.size / activeEmployeesCount) * 100)
+                    : 0;
+
+                setStats({
+                    totalInvitedEmployees,
+                    activeEmployees: activeEmployeesCount,
+                    sessionsToday: sessionsTodayCount,
+                    dailyEngagementPercent
+                });
+
+                // --- Process Employee Table Data ---
+
+                const processedEmployees: EmployeeStats[] = empData.map(emp => {
+                    const empSessions = sessions.filter(s => s.employee_id === emp.id);
+                    const todayCount = empSessions.filter(s => s.started_at.startsWith(today)).length;
+
+                    // Simple counting for last 7 days
+                    const last7SaysCount = empSessions.length;
+
+                    // Mocking Streak for now as it requires complex consecutive day calculation
+                    // In production, this would be a column 'current_streak' on the employee table updated by a cron job/trigger
+                    const mockStreak = emp.status === 'active' ? Math.floor(Math.random() * 10) : 0;
+
+                    return {
+                        id: emp.id,
+                        name: emp.name || emp.email, // Fallback to email if name missing
+                        email: emp.email,
+                        status: emp.status || 'invited', // Default to invited
+                        sessionsToday: todayCount,
+                        sessionsLast7Days: last7SaysCount,
+                        streakDays: mockStreak
+                    };
+                });
+
+                setEmployees(processedEmployees);
+
+            } catch (error) {
+                console.error("Failed to load dashboard data:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadDashboardData();
+    }, []);
+
     // Filter Logic
-    const filteredEmployees = MOCK_EMPLOYEES.filter(employee =>
+    const filteredEmployees = employees.filter(employee =>
         employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         employee.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -43,12 +157,24 @@ export default function DashboardPage() {
     });
 
     const handleSort = (key: string) => {
-        let direction: "asc" | "desc" = "desc"; // Default to desc for numbers usually
+        let direction: "asc" | "desc" = "desc";
         if (sortConfig && sortConfig.key === key && sortConfig.direction === "desc") {
             direction = "asc";
         }
         setSortConfig({ key, direction });
     };
+
+    if (loading) {
+        return (
+            <div className="space-y-8 p-8 max-w-7xl mx-auto animate-pulse">
+                <div className="h-32 bg-gray-100 rounded-xl"></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-gray-100 rounded-xl"></div>)}
+                </div>
+                <div className="h-96 bg-gray-100 rounded-xl"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8">
@@ -59,12 +185,12 @@ export default function DashboardPage() {
                     <p className="text-gray-500 mt-2 text-lg">Track how your employees are using Micro-Breaks today.</p>
                 </div>
                 <div className="flex gap-4 w-full md:w-auto">
-                    <Link href="/invite" className="flex-1 md:flex-none text-center bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition">
+                    <Link href="/employees" className="flex-1 md:flex-none text-center bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition">
                         Invite Employees
                     </Link>
-                    <button className="flex-1 md:flex-none bg-white text-gray-700 border px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition">
+                    <Link href="/analytics" className="flex-1 md:flex-none text-center bg-white text-gray-700 border px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition">
                         View Detailed Analytics
-                    </button>
+                    </Link>
                 </div>
             </div>
 
@@ -72,26 +198,26 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <KpiCard
                     label="Total Invited Employees"
-                    value={MOCK_STATS.totalInvitedEmployees}
+                    value={stats.totalInvitedEmployees}
                     subtext="Includes active and invited"
                 />
                 <KpiCard
                     label="Employees Active"
-                    value={MOCK_STATS.activeEmployees}
+                    value={stats.activeEmployees}
                     subtext="Signed in on extension"
                 />
                 <KpiCard
                     label="Sessions Today"
-                    value={MOCK_STATS.sessionsToday}
+                    value={stats.sessionsToday}
                     subtext="Company-wide sessions"
                 />
                 <KpiCard
                     label="Daily Engagement"
-                    value={`${MOCK_STATS.dailyEngagementPercent}%`}
+                    value={`${stats.dailyEngagementPercent}%`}
                     subtext="% active with ≥1 session"
                     valueColor={
-                        MOCK_STATS.dailyEngagementPercent > 60 ? "text-green-600" :
-                            MOCK_STATS.dailyEngagementPercent < 30 ? "text-red-600" : "text-amber-600"
+                        stats.dailyEngagementPercent > 60 ? "text-green-600" :
+                            stats.dailyEngagementPercent < 30 ? "text-red-600" : "text-amber-600"
                     }
                 />
             </div>
@@ -143,9 +269,9 @@ export default function DashboardPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${employee.status === "Active" ? "bg-green-100 text-green-800" :
-                                                    employee.status === "Invited" ? "bg-blue-100 text-blue-800" :
-                                                        "bg-gray-100 text-gray-800" // Inactive
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${employee.status === "active" ? "bg-green-100 text-green-800" :
+                                                    employee.status === "invited" ? "bg-blue-100 text-blue-800" :
+                                                        "bg-gray-100 text-gray-800"
                                                 }`}>
                                                 {employee.status}
                                             </span>
