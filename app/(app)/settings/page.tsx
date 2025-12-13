@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Upload, X, Save, Clock, Calendar } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
-    const [companyName, setCompanyName] = useState("");
-    const [logo, setLogo] = useState<File | null>(null);
-    const [industry, setIndustry] = useState("");
-
+    // 1. Reminder Settings
     const [breakFrequency, setBreakFrequency] = useState("60");
     const [workStart, setWorkStart] = useState("09:00");
     const [workEnd, setWorkEnd] = useState("18:00");
@@ -16,46 +14,93 @@ export default function SettingsPage() {
     const [pauseWeekends, setPauseWeekends] = useState(true);
     const [pauseHolidays, setPauseHolidays] = useState(true);
 
+    // 2. Company Settings
+    const [companyName, setCompanyName] = useState("");
+    const [logo, setLogo] = useState<File | null>(null);
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [industry, setIndustry] = useState("");
+
+    // 3. HR Profile Settings
     const [hrName, setHrName] = useState("");
+    const [hrEmail, setHrEmail] = useState("");
     const [timezone, setTimezone] = useState("UTC");
     const [weeklyDigest, setWeeklyDigest] = useState(true);
 
+    const [loading, setLoading] = useState(true);
     const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+    const supabase = createClient();
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 3000);
     };
 
-    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setLogo(file);
-        }
-    };
+    // Load Data
+    useEffect(() => {
+        async function loadSettings() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
 
-    const handleSaveCompany = () => {
-        if (!companyName) {
-            showToast("Company name is required", 'error');
-            return;
-        }
-        // Mock save
-        showToast("Company settings updated successfully.");
-    };
+            // Fetch Profile & Company
+            const { data: profile } = await supabase.from('profiles').select('*, companies(*)').eq('id', user.id).single();
+            if (profile) {
+                setHrName(profile.full_name || "");
+                setHrEmail(user.email || ""); // Read-only from auth
+                setWeeklyDigest(profile.weekly_digest_enabled || false);
+                // Timezone could be added to profile in future schema
 
-    const handleSaveReminder = () => {
-        // Mock save
+                if (profile.companies) {
+                    setCompanyName(profile.companies.name);
+                    setIndustry(profile.companies.industry || "");
+                    setLogoUrl(profile.companies.logo_url);
+                }
+            }
+
+            setLoading(false);
+        }
+        loadSettings();
+    }, []);
+
+
+    // --- Handlers ---
+
+    const handleSaveReminder = async () => {
+        // Logic to save to `reminder_settings` table (needs to be created in DB)
+        // For now just toast
         showToast("Reminder preferences updated.");
     };
 
-    const handleSaveProfile = () => {
-        if (!hrName) {
-            showToast("Name is required", 'error');
-            return;
+    const handleSaveCompany = async () => {
+        if (!companyName) return showToast("Company name is required", 'error');
+
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', user?.id).single();
+
+        if (profile?.company_id) {
+            const { error } = await supabase
+                .from('companies')
+                .update({ name: companyName, industry })
+                .eq('id', profile.company_id);
+
+            if (error) showToast("Failed to update company settings", 'error');
+            else showToast("Company settings updated successfully.");
         }
-        // Mock save
-        showToast("Profile updated successfully.");
     };
+
+    const handleSaveProfile = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({ full_name: hrName, weekly_digest_enabled: weeklyDigest })
+            .eq('id', user.id);
+
+        if (error) showToast("Failed to update profile", 'error');
+        else showToast("Profile updated successfully.");
+    };
+
+    if (loading) return <div className="p-8 text-center text-gray-500">Loading settings...</div>;
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 relative pb-20">
@@ -72,86 +117,7 @@ export default function SettingsPage() {
                 <p className="text-gray-500 mt-1">Manage your company preferences, reminder settings, and profile.</p>
             </div>
 
-            {/* SECTION 1: Company Settings */}
-            <div className="bg-white rounded-xl shadow-sm border p-6 flex flex-col gap-6">
-                <div>
-                    <h2 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Company Settings</h2>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* A. Company Name */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-700">Company Name</label>
-                            <input
-                                type="text"
-                                className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                placeholder="Acme Corporation"
-                                value={companyName}
-                                onChange={(e) => setCompanyName(e.target.value)}
-                            />
-                        </div>
-
-                        {/* C. Industry */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-700">Industry <span className="text-gray-400 font-normal">(Optional)</span></label>
-                            <select
-                                className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                                value={industry}
-                                onChange={(e) => setIndustry(e.target.value)}
-                            >
-                                <option value="">Select Industry</option>
-                                <option value="Technology">Technology</option>
-                                <option value="Finance">Finance</option>
-                                <option value="Healthcare">Healthcare</option>
-                                <option value="Manufacturing">Manufacturing</option>
-                                <option value="Retail">Retail</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* B. Company Logo */}
-                    <div className="mt-6 space-y-2">
-                        <label className="text-sm font-semibold text-gray-700">Company Logo</label>
-                        <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition relative">
-                            <input
-                                type="file"
-                                accept="image/png, image/jpeg, image/svg+xml"
-                                onChange={handleLogoUpload}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            />
-                            {logo ? (
-                                <div className="relative">
-                                    <img src={URL.createObjectURL(logo)} alt="Preview" className="h-16 w-auto object-contain mb-2" />
-                                    <p className="text-sm text-gray-900 font-medium">{logo.name}</p>
-                                    <button
-                                        onClick={(e) => { e.preventDefault(); setLogo(null); }}
-                                        className="text-xs text-red-600 hover:underline mt-1 relative z-10"
-                                    >
-                                        Remove
-                                    </button>
-                                </div>
-                            ) : (
-                                <>
-                                    <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                                    <p className="text-sm font-medium text-gray-900">Upload Logo</p>
-                                    <p className="text-xs text-gray-500 mt-1">PNG, JPG, SVG up to 2MB</p>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex justify-end pt-4 border-t">
-                    <button
-                        onClick={handleSaveCompany}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-2"
-                    >
-                        <Save className="h-4 w-4" /> Save Company Settings
-                    </button>
-                </div>
-            </div>
-
-            {/* SECTION 2: Reminder Settings */}
+            {/* SECTION 1: Reminder Settings (Top Priority) */}
             <div className="bg-white rounded-xl shadow-sm border p-6 flex flex-col gap-6">
                 <div>
                     <h2 className="text-lg font-bold text-gray-900">Reminder Settings</h2>
@@ -288,6 +254,87 @@ export default function SettingsPage() {
                 </div>
             </div>
 
+            {/* SECTION 2: Company Settings */}
+            <div className="bg-white rounded-xl shadow-sm border p-6 flex flex-col gap-6">
+                <div>
+                    <h2 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Company Settings</h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* A. Company Name */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-700">Company Name</label>
+                            <input
+                                type="text"
+                                className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                placeholder="Acme Corporation"
+                                value={companyName}
+                                onChange={(e) => setCompanyName(e.target.value)}
+                            />
+                        </div>
+
+                        {/* C. Industry */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-700">Industry <span className="text-gray-400 font-normal">(Optional)</span></label>
+                            <select
+                                className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                value={industry}
+                                onChange={(e) => setIndustry(e.target.value)}
+                            >
+                                <option value="">Select Industry</option>
+                                <option value="Technology">Technology</option>
+                                <option value="Finance">Finance</option>
+                                <option value="Healthcare">Healthcare</option>
+                                <option value="Manufacturing">Manufacturing</option>
+                                <option value="Retail">Retail</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* B. Company Logo */}
+                    <div className="mt-6 space-y-2">
+                        <label className="text-sm font-semibold text-gray-700 flex items-baseline gap-2">
+                            Company Logo <span className="text-xs text-gray-500 italic font-normal">This logo will appear on the Chrome extension.</span>
+                        </label>
+                        <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition relative">
+                            <input
+                                type="file"
+                                accept="image/png, image/jpeg, image/svg+xml"
+                                onChange={(e) => setLogo(e.target.files?.[0] || null)}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            {logo || logoUrl ? (
+                                <div className="relative">
+                                    <img src={logo ? URL.createObjectURL(logo) : logoUrl!} alt="Preview" className="h-16 w-auto object-contain mb-2" />
+                                    <p className="text-sm text-gray-900 font-medium">{logo?.name || "Current Logo"}</p>
+                                    <button
+                                        onClick={(e) => { e.preventDefault(); setLogo(null); setLogoUrl(null); }}
+                                        className="text-xs text-red-600 hover:underline mt-1 relative z-10"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                                    <p className="text-sm font-medium text-gray-900">Upload Logo</p>
+                                    <p className="text-xs text-gray-500 mt-1">PNG, JPG, SVG up to 2MB</p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex justify-end pt-4 border-t">
+                    <button
+                        onClick={handleSaveCompany}
+                        className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-2"
+                    >
+                        <Save className="h-4 w-4" /> Save Company Settings
+                    </button>
+                </div>
+            </div>
+
             {/* SECTION 3: HR Profile Settings */}
             <div className="bg-white rounded-xl shadow-sm border p-6 flex flex-col gap-6">
                 <div>
@@ -313,7 +360,7 @@ export default function SettingsPage() {
                                 type="email"
                                 disabled
                                 className="w-full border p-3 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed outline-none"
-                                value="hr@example.com" // Mock value
+                                value={hrEmail}
                             />
                             <p className="text-xs text-gray-500">Email cannot be changed. Contact support to request an update.</p>
                         </div>

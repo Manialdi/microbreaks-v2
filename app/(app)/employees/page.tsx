@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useCallback } from "react";
 import {
     Search, MoreVertical, Copy, Upload, Mail, X,
-    RotateCcw, Trash2, Flame, CheckCircle
+    RotateCcw, Trash2, Flame, CheckCircle, AlertCircle
 } from "lucide-react";
 import Papa from "papaparse";
 import {
     BarChart, Bar, XAxis, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell
 } from "recharts";
+import { createClient } from "@/lib/supabase/client";
 
 // --- Mock Data ---
 
@@ -28,48 +29,7 @@ const MOCK_EMPLOYEES = [
         trend7Days: [3, 2, 4, 1, 5, 3, 4],
         exerciseBreakdown: { neck: 32, wrist: 18, eye: 20, posture: 22, breathing: 8 }
     },
-    {
-        id: "2",
-        name: "John Smith",
-        email: "john@company.com",
-        status: "Invited",
-        sessionsToday: 0,
-        sessionsThisWeek: 0,
-        totalSessions: 0,
-        lastActive: null,
-        createdAt: "2025-12-11T09:00:00Z",
-        streakDays: 0,
-        trend7Days: [0, 0, 0, 0, 0, 0, 0],
-        exerciseBreakdown: { neck: 0, wrist: 0, eye: 0, posture: 0, breathing: 0 }
-    },
-    {
-        id: "3",
-        name: "Alice Johnson",
-        email: "alice@company.com",
-        status: "Active",
-        sessionsToday: 2,
-        sessionsThisWeek: 10,
-        totalSessions: 45,
-        lastActive: "2025-12-11T14:15:00Z",
-        createdAt: "2025-11-01T10:00:00Z",
-        streakDays: 3,
-        trend7Days: [1, 2, 1, 3, 0, 1, 2],
-        exerciseBreakdown: { neck: 40, wrist: 10, eye: 30, posture: 10, breathing: 10 }
-    },
-    {
-        id: "4",
-        name: "Bob Brown",
-        email: "bob@company.com",
-        status: "Disabled",
-        sessionsToday: 0,
-        sessionsThisWeek: 2,
-        totalSessions: 89,
-        lastActive: "2025-12-05T09:00:00Z",
-        createdAt: "2025-08-15T08:30:00Z",
-        streakDays: 0,
-        trend7Days: [0, 0, 0, 0, 0, 0, 0],
-        exerciseBreakdown: { neck: 20, wrist: 20, eye: 20, posture: 20, breathing: 20 }
-    },
+    // ... (Keep existing mocks for fallback or remove if fully switching)
 ];
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
@@ -83,29 +43,76 @@ export default function EmployeesPage() {
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [inviteEmails, setInviteEmails] = useState("");
     const [isPreviewingInvite, setIsPreviewingInvite] = useState(false);
-    const [parsedEmails, setParsedEmails] = useState<string[]>([]);
+    const [parsedEmails, setParsedEmails] = useState<{ email: string, valid: boolean, reason?: string }[]>([]);
     const [csvFile, setCsvFile] = useState<File | null>(null);
-    const [csvPreview, setCsvPreview] = useState<{ valid: number, invalid: number } | null>(null);
+    const [csvPreview, setCsvPreview] = useState<{ valid: any[], invalid: any[] } | null>(null);
+    const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+    const createSupabase = () => createClient();
+    const supabase = createSupabase();
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3000);
+    };
 
     // --- Actions ---
 
-    const handleInvitePreview = () => {
-        const emails = inviteEmails.split(',').map(e => e.trim()).filter(e => e.length > 0 && e.includes('@'));
-        // Basic validation mock
-        setParsedEmails(emails);
-        if (emails.length > 0) setIsPreviewingInvite(true);
+    const handleCopyLink = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', user.id).single();
+        if (profile?.company_id) {
+            const url = `https://micro-breaks.com/signup?company=${profile.company_id}`;
+            navigator.clipboard.writeText(url);
+            showToast("Invite link copied!");
+        }
     };
 
-    const handleSendInvite = () => {
-        // Mock sending
-        alert(`Invites sent to ${parsedEmails.length} emails!`);
+    const validateEmailDomain = async (email: string): Promise<boolean> => {
+        // In real app, we fetch company domain from DB. 
+        // For UI demo, assume current user's email domain is the restriction.
+        const { data: { user } } = await supabase.auth.getUser();
+        const userDomain = user?.email?.split('@')[1];
+
+        if (!userDomain) return true; // Fallback
+        return email.trim().endsWith(`@${userDomain}`);
+    };
+
+    const handleInvitePreview = async () => {
+        const rawEmails = inviteEmails.split(',').map(e => e.trim()).filter(e => e.length > 0);
+        const { data: { user } } = await supabase.auth.getUser();
+
+        // Mock domain check - assume user's domain
+        const requiredDomain = user?.email ? user.email.split('@')[1] : "company.com";
+
+        const validated = rawEmails.map(email => {
+            const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+            const isCorrectDomain = email.endsWith(`@${requiredDomain}`);
+
+            let valid = isValidFormat && isCorrectDomain;
+            let reason = "";
+            if (!isValidFormat) reason = "Invalid email format";
+            else if (!isCorrectDomain) reason = `Must be @${requiredDomain}`;
+
+            return { email, valid, reason };
+        });
+
+        setParsedEmails(validated);
+        if (validated.length > 0) setIsPreviewingInvite(true);
+    };
+
+    const handleSendInvite = async () => {
+        const validEmails = parsedEmails.filter(e => e.valid).map(e => e.email);
+
+        // 1. Insert into Invites table
+        // 2. Upsert into Employees table with status 'invited'
+        // For now, mock success
+
+        showToast(`Invites sent to ${validEmails.length} employees.`);
         setIsPreviewingInvite(false);
         setInviteEmails("");
-    };
-
-    const handleCopyLink = () => {
-        navigator.clipboard.writeText("https://micro-breaks.com/signup?company=mock-id");
-        alert("Invite link copied!");
+        setParsedEmails([]);
     };
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,13 +120,50 @@ export default function EmployeesPage() {
         if (file) {
             setCsvFile(file);
             Papa.parse(file, {
-                complete: (results) => {
-                    // Mock validation logic
-                    setCsvPreview({ valid: results.data.length - 1, invalid: 0 }); // Subtract header
-                },
-                header: true
+                header: true,
+                skipEmptyLines: true,
+                complete: async (results) => {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    const requiredDomain = user?.email ? user.email.split('@')[1] : "company.com";
+
+                    const rows = results.data as any[];
+                    const valid: any[] = [];
+                    const invalid: any[] = [];
+
+                    rows.forEach((row, idx) => {
+                        // Normalize keys (case insensitive)
+                        const normalized: any = {};
+                        Object.keys(row).forEach(k => normalized[k.toLowerCase()] = row[k]);
+
+                        const email = normalized['mail id'] || normalized['email'];
+                        const name = normalized['name'];
+
+                        if (!email || !name) {
+                            invalid.push({ ...row, reason: "Missing Name or Mail id" });
+                            return;
+                        }
+
+                        const isCorrectDomain = email.trim().endsWith(`@${requiredDomain}`);
+
+                        if (isCorrectDomain) {
+                            valid.push(normalized);
+                        } else {
+                            invalid.push({ ...row, reason: "Incorrect domain" });
+                        }
+                    });
+
+                    setCsvPreview({ valid, invalid });
+                }
             });
         }
+    };
+
+    const handleImportEmployees = () => {
+        if (!csvPreview) return;
+        // Logic to upsert valid rows to Supabase
+        showToast(`Imported ${csvPreview.valid.length} employees. Skipped ${csvPreview.invalid.length} invalid rows.`);
+        setCsvFile(null);
+        setCsvPreview(null);
     };
 
     // --- Filtering ---
@@ -131,6 +175,13 @@ export default function EmployeesPage() {
 
     return (
         <div className="space-y-8 relative">
+            {/* Toast Notification */}
+            {toast && (
+                <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-50 animate-fade-in-up ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
+                    {toast.message}
+                </div>
+            )}
+
             {/* SECTION 1: Page Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -159,7 +210,7 @@ export default function EmployeesPage() {
                 <div className="space-y-4">
                     <div className="flex justify-between items-baseline">
                         <label className="text-sm font-semibold text-gray-900">Invite New Employees</label>
-                        <span className="text-xs text-gray-500">Enter email addresses separated by commas</span>
+                        <span className="text-xs text-gray-500">Enter email addresses separated by commas (Example: john@company.com)</span>
                     </div>
                     <div className="flex gap-4">
                         <input
@@ -185,7 +236,8 @@ export default function EmployeesPage() {
                     <div className="flex justify-between items-center mb-4">
                         <div>
                             <h3 className="text-sm font-semibold text-gray-900">Bulk Upload via CSV</h3>
-                            <p className="text-sm text-gray-500 mt-1">Upload a CSV with two columns: Name and Email.</p>
+                            <p className="text-sm text-gray-500 mt-1">Upload a CSV to invite or update multiple employees.</p>
+                            <p className="text-xs text-gray-400 mt-1">Only 4 columns needed: Name, Mail id, Employee id, Department.</p>
                         </div>
                         <button className="text-sm text-blue-600 hover:underline">Download sample CSV</button>
                     </div>
@@ -201,7 +253,12 @@ export default function EmployeesPage() {
                         {csvFile ? (
                             <div className="text-sm text-gray-900 font-medium">
                                 Selected: {csvFile.name}
-                                {csvPreview && <span className="block text-green-600 mt-1">{csvPreview.valid} valid rows ready to import</span>}
+                                {csvPreview && (
+                                    <div className="mt-2 space-y-1">
+                                        <span className="block text-green-600">{csvPreview.valid.length} valid rows</span>
+                                        {csvPreview.invalid.length > 0 && <span className="block text-red-600">{csvPreview.invalid.length} invalid rows</span>}
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <>
@@ -210,9 +267,12 @@ export default function EmployeesPage() {
                             </>
                         )}
                     </div>
-                    {csvFile && (
-                        <div className="mt-4 flex justify-end">
-                            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">Import Employees</button>
+                    {csvFile && csvPreview && (
+                        <div className="mt-4 flex justify-end gap-2">
+                            <button onClick={() => { setCsvFile(null); setCsvPreview(null); }} className="px-4 py-2 border rounded-lg text-sm text-gray-700">Cancel</button>
+                            <button onClick={handleImportEmployees} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700" disabled={csvPreview.valid.length === 0}>
+                                Import {csvPreview.valid.length} Employees
+                            </button>
                         </div>
                     )}
                 </div>
@@ -293,7 +353,7 @@ export default function EmployeesPage() {
                         className="absolute inset-0 bg-black/20 backdrop-blur-sm"
                         onClick={() => setSelectedEmployee(null)}
                     ></div>
-                    <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col">
+                    <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col animate-slide-in-right">
                         <div className="flex justify-between items-start mb-6">
                             <div>
                                 <h2 className="text-2xl font-bold text-gray-900">{selectedEmployee.name}</h2>
@@ -405,14 +465,24 @@ export default function EmployeesPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
                         <h3 className="text-lg font-bold mb-4">Confirm Invitations</h3>
-                        <p className="text-sm text-gray-500 mb-4">We will send an invitation to the following {parsedEmails.length} people:</p>
-                        <div className="max-h-40 overflow-y-auto border rounded-lg p-2 mb-6 bg-gray-50">
-                            {parsedEmails.map(email => (
-                                <div key={email} className="flex items-center gap-2 text-sm text-gray-700 py-1">
-                                    <CheckCircle className="h-3 w-3 text-green-500" /> {email}
+                        <p className="text-sm text-gray-500 mb-4">We will send an invitation to the following people:</p>
+
+                        <div className="max-h-40 overflow-y-auto border rounded-lg p-2 mb-6 bg-gray-50 space-y-1">
+                            {parsedEmails.map((item, i) => (
+                                <div key={i} className="flex items-center justify-between text-sm py-1 px-2 border-b last:border-0 border-gray-100">
+                                    <div className="flex items-center gap-2">
+                                        {item.valid ? (
+                                            <CheckCircle className="h-3 w-3 text-green-500" />
+                                        ) : (
+                                            <AlertCircle className="h-3 w-3 text-red-500" />
+                                        )}
+                                        <span className={item.valid ? "text-gray-900" : "text-red-600"}>{item.email}</span>
+                                    </div>
+                                    {!item.valid && <span className="text-xs text-red-500">{item.reason}</span>}
                                 </div>
                             ))}
                         </div>
+
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setIsPreviewingInvite(false)}
@@ -422,9 +492,10 @@ export default function EmployeesPage() {
                             </button>
                             <button
                                 onClick={handleSendInvite}
-                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition"
+                                disabled={!parsedEmails.some(e => e.valid)}
+                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition disabled:bg-gray-300 disabled:cursor-not-allowed"
                             >
-                                Send Invites
+                                Send {parsedEmails.filter(e => e.valid).length} Invites
                             </button>
                         </div>
                     </div>
