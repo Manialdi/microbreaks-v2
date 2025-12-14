@@ -183,67 +183,46 @@ export default function EmployeesPage() {
         if (!companyId) return;
         const validEmails = parsedEmails.filter(e => e.valid).map(e => e.email);
 
-        // Block if any invalid (though UI should prevent this)
         if (parsedEmails.some(e => !e.valid)) {
             showToast(`Please remove invalid emails before sending.`, 'error');
             return;
         }
 
+        if (validEmails.length === 0) return;
+
         try {
-            const promises = validEmails.map(async (email) => {
-                // Check if employee exists
-                const { data: existing } = await supabase
-                    .from('employees')
-                    .select('id')
-                    .eq('company_id', companyId)
-                    .eq('email', email)
-                    .single();
-
-                let empError;
-                if (existing) {
-                    // Update
-                    const { error } = await supabase
-                        .from('employees')
-                        .update({ status: 'invited' })
-                        .eq('id', existing.id);
-                    empError = error;
-                } else {
-                    // Insert
-                    const { error } = await supabase
-                        .from('employees')
-                        .insert({
-                            company_id: companyId,
-                            email: email,
-                            status: 'invited'
-                        });
-                    empError = error;
-                }
-
-                if (empError) throw empError;
-
-                // Insert Invite
-                const { error: invError } = await supabase
-                    .from('invitations')
-                    .insert({
-                        company_id: companyId,
-                        email: email,
-                        status: 'pending',
-                        token: crypto.randomUUID()
-                    });
+            const response = await fetch('/api/hr/send-invites', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ emails: validEmails, companyId })
             });
 
-            await Promise.all(promises);
-            showToast(`Invites sent to ${validEmails.length} employees.`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to send invites");
+            }
+
+            const results = data.results || [];
+            const failed = results.filter((r: any) => r.status === 'error');
+            const success = results.filter((r: any) => r.status === 'success');
+
+            if (failed.length > 0) {
+                showToast(`Sent ${success.length}, Failed ${failed.length}. Check console.`, 'error');
+                console.error("Failed emails:", failed);
+            } else {
+                showToast(`Invites sent to ${success.length} employees successfully.`);
+            }
+
             setIsPreviewingInvite(false);
             setInviteEmails("");
             setParsedEmails([]);
 
-            // Reload window to show new statuses? 
-            // Better to fetch just one or simply reload.
-            window.location.reload();
+            // Reload to update list
+            setTimeout(() => window.location.reload(), 1000);
 
         } catch (err: any) {
-            console.error("Invite Error:", err);
+            console.error("Invite API Error:", err);
             showToast(`Error: ${err.message || "We couldn't send the invites."}`, 'error');
         }
     };
