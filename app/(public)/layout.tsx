@@ -1,6 +1,12 @@
 
 import Link from "next/link"
 import { MarketingHeader } from "@/components/marketing/MarketingHeader"
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Micro-Breaks — 2-Minute Wellness for Teams",
+    description: "Boost team productivity with quick 2-minute wellness breaks. The #1 wellness tool for remote teams.",
+};
 
 export default function MarketingLayout({
     children,

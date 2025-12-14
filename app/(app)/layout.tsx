@@ -1,7 +1,14 @@
-
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: {
+        template: 'Micro-Breaks | %s',
+        default: 'Micro-Breaks | Dashboard',
+    },
+};
 
 export default async function AppLayout({
     children,
