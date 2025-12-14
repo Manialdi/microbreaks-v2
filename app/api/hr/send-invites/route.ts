@@ -37,11 +37,19 @@ export async function POST(req: NextRequest) {
         // @ts-ignore
         const companyDomain = profile.companies?.domain;
 
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+        if (!serviceRoleKey || !supabaseUrl) {
+            console.error("Missing Env Vars:", {
+                url: !!supabaseUrl,
+                serviceKey: !!serviceRoleKey
+            });
+            return NextResponse.json({ error: 'Server Configuration Error: Missing Supabase Service Key' }, { status: 500 });
+        }
+
         // 4. Admin Client for Invites (Service Role)
-        const supabaseAdmin = createAdminClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        );
+        const supabaseAdmin = createAdminClient(supabaseUrl, serviceRoleKey);
 
         const results = [];
 
