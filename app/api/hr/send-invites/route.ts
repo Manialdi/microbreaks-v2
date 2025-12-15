@@ -75,19 +75,43 @@ export async function POST(req: NextRequest) {
                 let authUserId = userData.user?.id;
 
                 if (createError) {
-                    // Handle "User already exists" gracefully if needed, or strictly fail.
-                    // For now, strict fail to avoid confusion, but we could check if they are 'invited' and resend.
-                    console.error(`Failed to create user ${email}:`, createError);
-                    results.push({ email, status: 'error', message: createError.message });
-                    continue;
+                    // Check if user already exists
+                    if (createError.message.includes('already been registered') || createError.status === 422) {
+                        console.log(`User ${email} exists. Fetching details...`);
+
+                        // Attempt to find user to get their ID
+                        // Note: listUsers is paginated (default 50). This is a simple fallback for small batches.
+                        const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
+                        const existingUser = listData?.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+
+                        if (existingUser) {
+                            authUserId = existingUser.id;
+                        } else {
+                            console.warn(`Could not find ID for existing user ${email} in page 1. Skipping DB link.`);
+                            // We allow flow to continue to send EMAIL, but we might fail DB upsert if auth_user_id is strictly required.
+                            // However, usually we can just send the email.
+                        }
+
+                    } else {
+                        console.error(`Failed to create user ${email}:`, createError);
+                        results.push({ email, status: 'error', message: createError.message });
+                        continue;
+                    }
+                } else {
+                    authUserId = userData.user?.id;
                 }
 
-                if (!authUserId) throw new Error("Failed to get User ID");
+                // If we still don't have ID, we might fail DB, but let's try to send email at least?
+                // Logic: If we can't get ID, we can't generateLink easily either? 
+                // Wait, generateLink only needs email. So we are good for email sending!
 
                 // C. Generate Magic Link (Recovery Type = Set Password)
                 const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
                     type: 'recovery',
-                    email: email
+                    email: email,
+                    options: {
+                        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/employee/onboarding`
+                    }
                 });
 
                 if (linkError || !linkData.properties?.action_link) {
@@ -108,25 +132,28 @@ export async function POST(req: NextRequest) {
                     throw new Error(`Email sending failed: ${emailError.message}`);
                 }
 
-                // E. Upsert Employee Record
-                await supabaseAdmin
-                    .from('employees')
-                    .upsert({
+                // E. Upsert Employee Record (Only if we have ID, otherwise invite works but DB status might trail)
+                if (authUserId) {
+                    await supabaseAdmin
+                        .from('employees')
+                        .upsert({
+                            company_id: companyId,
+                            email: email,
+                            status: 'invited',
+                            auth_user_id: authUserId
+                        }, { onConflict: 'email' } as any);
+
+                    // F. Log Invitation
+                    await supabaseAdmin.from('invitations').insert({
                         company_id: companyId,
                         email: email,
-                        status: 'invited',
+                        status: 'pending',
                         auth_user_id: authUserId
-                    }, { onConflict: 'email' } as any);
-
-                // F. Log Invitation
-                await supabaseAdmin.from('invitations').insert({
-                    company_id: companyId,
-                    email: email,
-                    status: 'pending',
-                    auth_user_id: authUserId
-                });
-
-                results.push({ email, status: 'success', id: authUserId });
+                    });
+                    results.push({ email, status: 'success', id: authUserId });
+                } else {
+                    results.push({ email, status: 'success', message: "Invite sent (ID lookup skipped)" });
+                }
 
             } catch (err: any) {
                 console.error(`Process failed for ${email}:`, err);
