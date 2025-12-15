@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
 
         if (!serviceRoleKey) {
             console.error("Critical: SUPABASE_SERVICE_ROLE_KEY is missing from process.env");
-            return NextResponse.json({ error: 'Server Configuration Error: Missing Supabase Service Key. Please restart your server.' }, { status: 500 });
+            return NextResponse.json({ error: 'Server Configuration Error: Missing Supabase Service Key. Please check your Vercel Environment Variables.' }, { status: 500 });
         }
         if (!supabaseUrl) {
             console.error("Critical: NEXT_PUBLIC_SUPABASE_URL is missing from process.env");
