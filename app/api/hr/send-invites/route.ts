@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { resend } from '@/lib/email/resend';
+import { getInviteEmailTemplate } from '@/lib/email/templates';
 
 export async function POST(req: NextRequest) {
     try {
@@ -61,49 +63,75 @@ export async function POST(req: NextRequest) {
                 continue;
             }
 
-            // B. Send Invite via Supabase Auth
-            const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-                redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://micro-breaks.com'}/employee/onboarding`
-            });
+            try {
+                // B. Create User (Silently - Auto Confirm)
+                // This prevents Supabase from sending its default email
+                const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+                    email: email,
+                    email_confirm: true,
+                    user_metadata: { company_id: companyId }
+                });
 
-            if (inviteError) {
-                console.error(`Failed to invite ${email}:`, inviteError);
-                // If user already registered, we might want to just "invited" them in DB? 
-                // But usually inviteUserByEmail fails if user exists. 
-                // Let's report error.
-                results.push({ email, status: 'error', message: inviteError.message });
-                continue;
-            }
+                let authUserId = userData.user?.id;
 
-            const newAuthUserId = inviteData.user.id;
+                if (createError) {
+                    // Handle "User already exists" gracefully if needed, or strictly fail.
+                    // For now, strict fail to avoid confusion, but we could check if they are 'invited' and resend.
+                    console.error(`Failed to create user ${email}:`, createError);
+                    results.push({ email, status: 'error', message: createError.message });
+                    continue;
+                }
 
-            // C. Upsert Employee (Ensure DB record exists)
-            const { error: empError } = await supabaseAdmin
-                .from('employees')
-                .upsert({
+                if (!authUserId) throw new Error("Failed to get User ID");
+
+                // C. Generate Magic Link (Recovery Type = Set Password)
+                const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+                    type: 'recovery',
+                    email: email
+                });
+
+                if (linkError || !linkData.properties?.action_link) {
+                    throw new Error(linkError?.message || "Failed to generate invite link");
+                }
+
+                const inviteLink = linkData.properties.action_link;
+
+                // D. Send Custom Email via Resend
+                const { error: emailError } = await resend.emails.send({
+                    from: process.env.RESEND_FROM_EMAIL || 'invites@micro-breaks.com',
+                    to: email,
+                    subject: 'You have been invited to MicroBreaks',
+                    html: getInviteEmailTemplate(inviteLink)
+                });
+
+                if (emailError) {
+                    throw new Error(`Email sending failed: ${emailError.message}`);
+                }
+
+                // E. Upsert Employee Record
+                await supabaseAdmin
+                    .from('employees')
+                    .upsert({
+                        company_id: companyId,
+                        email: email,
+                        status: 'invited',
+                        auth_user_id: authUserId
+                    }, { onConflict: 'email' } as any);
+
+                // F. Log Invitation
+                await supabaseAdmin.from('invitations').insert({
                     company_id: companyId,
                     email: email,
-                    status: 'invited',
-                    auth_user_id: newAuthUserId // Store auth linkage
-                }, { onConflict: 'email' } as any) // Assuming email unique constraints or handle logic
-            // Note: We used select-insert logic in frontend, but here backend upsert is cleaner if constraint exists.
-            // Ref previous fix: We removed constraint reliance. Let's start with simple check-insert or upsert if PK known.
-            // actually, let's use the safer select-check pattern here too to match strictness if needed, 
-            // OR just upsert by email if email is unique. 
-            // Let's trust the frontend logic established earlier? 
-            // Actually, backend should be robust. 
-            // Let's do a simple upsert on 'email' if we assume specific uniqueness, otherwise Select -> Update/Insert.
-            // For simplicity and robustness given previous errors, lets do Select -> Insert/Update.
+                    status: 'pending',
+                    auth_user_id: authUserId
+                });
 
-            // D. Insert Invitation (Tracking)
-            await supabaseAdmin.from('invitations').insert({
-                company_id: companyId,
-                email: email,
-                status: 'pending',
-                auth_user_id: newAuthUserId
-            });
+                results.push({ email, status: 'success', id: authUserId });
 
-            results.push({ email, status: 'success', id: newAuthUserId });
+            } catch (err: any) {
+                console.error(`Process failed for ${email}:`, err);
+                results.push({ email, status: 'error', message: err.message });
+            }
         }
 
         return NextResponse.json({ results });
