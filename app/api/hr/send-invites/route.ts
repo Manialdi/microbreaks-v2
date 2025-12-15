@@ -7,9 +7,13 @@ export async function POST(req: NextRequest) {
         const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-        if (!serviceRoleKey || !supabaseUrl) {
-            console.error("Missing Env Vars - Supabase Service Key or URL not found");
-            return NextResponse.json({ error: 'Server Configuration Error: Missing Supabase Service Key' }, { status: 500 });
+        if (!serviceRoleKey) {
+            console.error("Critical: SUPABASE_SERVICE_ROLE_KEY is missing from process.env");
+            return NextResponse.json({ error: 'Server Configuration Error: Missing Supabase Service Key. Please restart your server.' }, { status: 500 });
+        }
+        if (!supabaseUrl) {
+            console.error("Critical: NEXT_PUBLIC_SUPABASE_URL is missing from process.env");
+            return NextResponse.json({ error: 'Server Configuration Error: Missing Supabase URL' }, { status: 500 });
         }
 
         const supabase = await createClient();
