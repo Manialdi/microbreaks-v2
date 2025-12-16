@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { resend } from '@/lib/email/resend';
-import { getInviteEmailTemplate } from '@/lib/email/templates';
+import { getCredentialsEmailTemplate } from '@/lib/email/templates';
+import { generateStrongPassword } from '@/lib/auth/password';
 
 export async function POST(req: NextRequest) {
     try {
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
 
         if (!serviceRoleKey) {
             console.error("Critical: SUPABASE_SERVICE_ROLE_KEY is missing from process.env");
-            return NextResponse.json({ error: 'Server Configuration Error: Missing Supabase Service Key. Please check your Vercel Environment Variables.' }, { status: 500 });
+            return NextResponse.json({ error: 'Server Configuration Error: Missing Supabase Service Key.' }, { status: 500 });
         }
         if (!supabaseUrl) {
             console.error("Critical: NEXT_PUBLIC_SUPABASE_URL is missing from process.env");
@@ -74,32 +75,38 @@ export async function POST(req: NextRequest) {
             }
 
             try {
-                // B. Create User (Silently - Auto Confirm)
-                // This prevents Supabase from sending its default email
+                // Generate secure random password
+                const password = generateStrongPassword();
+                let authUserId: string | undefined;
+
+                // B. Create or Update User with Password
                 const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
                     email: email,
+                    password: password, // Set password immediately
                     email_confirm: true,
                     user_metadata: { company_id: companyId }
                 });
 
-                let authUserId = userData.user?.id;
-
                 if (createError) {
                     // Check if user already exists
                     if (createError.message.includes('already been registered') || createError.status === 422) {
-                        console.log(`User ${email} exists. Fetching details...`);
+                        console.log(`User ${email} exists. Updating password...`);
 
-                        // Attempt to find user to get their ID
-                        // Note: listUsers is paginated (default 50). This is a simple fallback for small batches.
+                        // Find user
                         const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
                         const existingUser = listData?.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
 
                         if (existingUser) {
                             authUserId = existingUser.id;
+                            // Update password for existing user
+                            await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
+                                password: password,
+                                user_metadata: { ...existingUser.user_metadata, company_id: companyId }
+                            });
                         } else {
-                            console.warn(`Could not find ID for existing user ${email} in page 1. Skipping DB link.`);
-                            // We allow flow to continue to send EMAIL, but we might fail DB upsert if auth_user_id is strictly required.
-                            // However, usually we can just send the email.
+                            console.warn(`Could not find ID for existing user ${email}. Skipping.`);
+                            results.push({ email, status: 'error', message: "User exists but could not be updated." });
+                            continue;
                         }
 
                     } else {
@@ -111,11 +118,26 @@ export async function POST(req: NextRequest) {
                     authUserId = userData.user?.id;
                 }
 
-                // If we still don't have ID, we might fail DB, but let's try to send email at least?
-                // Logic: If we can't get ID, we can't generateLink easily either? 
-                // Wait, generateLink only needs email. So we are good for email sending!
+                // C. Send Email with Credentials
+                // Link to Extension Store (Placeholder or actual link)
+                // TODO: Replace with actual store link when available
+                const extensionLink = "https://chromewebstore.google.com/detail/placeholder-id";
 
-                // C. Upsert Employee Record (Manual check to be robust against missing DB constraints)
+                const { error: emailError } = await resend.emails.send({
+                    from: 'MicroBreaks <onboarding@micro-breaks.com>',
+                    to: email,
+                    subject: 'Welcome to MicroBreaks! (Login Credentials Inside)',
+                    html: getCredentialsEmailTemplate(email, password, extensionLink)
+                });
+
+                if (emailError) {
+                    console.error('Email sending failed:', emailError);
+                    results.push({ email, status: 'error', message: 'Failed to send invitation email' });
+                    continue;
+                }
+
+
+                // D. Upsert Employee Record
                 if (authUserId) {
                     const { data: existingEmps } = await supabaseAdmin
                         .from('employees')
@@ -130,7 +152,7 @@ export async function POST(req: NextRequest) {
                             .from('employees')
                             .update({
                                 company_id: companyId,
-                                status: 'invited', // Reset status if re-inviting
+                                status: 'active', // Mark active immediately as they have password
                                 auth_user_id: authUserId
                             })
                             .eq('id', existingEmp.id);
@@ -140,14 +162,13 @@ export async function POST(req: NextRequest) {
                             .insert({
                                 company_id: companyId,
                                 email: email,
-                                status: 'invited',
+                                status: 'active',
                                 auth_user_id: authUserId
                             });
                     }
                 }
 
-                // D. Log Invitation (Manual Upsert)
-                let inviteId;
+                // E. Log Invitation (Upsert)
                 const { data: existingInvites } = await supabaseAdmin
                     .from('invitations')
                     .select('id')
@@ -157,68 +178,38 @@ export async function POST(req: NextRequest) {
                 const existingInvite = existingInvites?.[0];
 
                 if (existingInvite) {
-                    // Update existing invite
                     await supabaseAdmin
                         .from('invitations')
                         .update({
                             company_id: companyId,
-                            status: 'pending',
-                            created_at: new Date().toISOString(),
-                            activation_token: crypto.randomUUID() // Satisfy constraint
+                            status: 'accepted', // Auto-accepted technically
+                            updated_at: new Date().toISOString()
                         })
                         .eq('id', existingInvite.id);
-                    inviteId = existingInvite.id;
                 } else {
-                    // Insert new
-                    const { data: newInvite, error: insertError } = await supabaseAdmin
+                    await supabaseAdmin
                         .from('invitations')
                         .insert({
                             company_id: companyId,
                             email: email,
-                            status: 'pending',
-                            activation_token: crypto.randomUUID() // Satisfy constraint
-                        })
-                        .select('id')
-                        .single();
-
-                    if (insertError) throw new Error(`Invite Insert Failed: ${insertError.message}`);
-                    inviteId = newInvite.id;
+                            status: 'accepted',
+                            token: crypto.randomUUID(), // Legacy field
+                            activation_token: crypto.randomUUID() // Legacy field
+                        });
                 }
 
-                if (!inviteId) {
-                    throw new Error("Could not retrieve invitation ID");
-                }
-
-                // E. Construct Secure ID-based Link
-                const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.micro-breaks.com';
-                const protectedLink = `${siteUrl}/verify-invite?id=${inviteId}`;
-
-
-
-                // F. Send Email
-                const { error: emailError } = await resend.emails.send({
-                    from: process.env.RESEND_FROM_EMAIL || 'invites@micro-breaks.com',
-                    to: email,
-                    subject: 'You have been invited to MicroBreaks',
-                    html: getInviteEmailTemplate(protectedLink)
-                });
-
-                if (emailError) {
-                    throw new Error(`Email sending failed: ${emailError.message}`);
-                }
-
-                results.push({ email, status: 'success', id: authUserId });
+                results.push({ email, status: 'success' });
 
             } catch (err: any) {
-                console.error(`Process failed for ${email}:`, err);
-                results.push({ email, status: 'error', message: err.message });
+                console.error(`Unexpected error processing ${email}:`, err);
+                results.push({ email, status: 'error', message: err.message || 'Internal Server Error' });
             }
         }
 
         return NextResponse.json({ results });
 
-    } catch (err: any) {
-        console.error("Invite API Error:", err);
-        return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
+    } catch (error: any) {
+        console.error('API Error:', error);
+        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
 }
