@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -15,6 +15,9 @@ export default function EmployeeOnboardingPage() {
     const [user, setUser] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // Track auth state across async closures to prevent race conditions
+    const isVerifiedRef = useRef(false);
+
     // Password State
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -26,6 +29,8 @@ export default function EmployeeOnboardingPage() {
             // 1. Check existing session
             const { data: { session: initialSession } } = await supabase.auth.getSession();
             if (initialSession) {
+                console.log("Initial session found");
+                isVerifiedRef.current = true;
                 setUser(initialSession.user);
                 setLoading(false);
                 return;
@@ -37,29 +42,35 @@ export default function EmployeeOnboardingPage() {
 
             if (hasAuthHash) {
                 console.log("Auth hash detected, waiting for session...");
-                // Wait longer for hydration (up to 4s) because of potential redirects
+                // Wait longer for hydration (up to 10s)
                 let attempts = 0;
                 const interval = setInterval(async () => {
                     attempts++;
+
+                    // Check if already verified by listener
+                    if (isVerifiedRef.current) {
+                        clearInterval(interval);
+                        return;
+                    }
+
                     const { data: { session } } = await supabase.auth.getSession();
                     if (session) {
+                        console.log("Session found via polling");
+                        isVerifiedRef.current = true;
                         clearInterval(interval);
                         setUser(session.user);
                         setError(null);
                         setLoading(false);
-                    } else if (attempts > 8) { // 4 seconds (500ms * 8)
+                    } else if (attempts > 20) { // 10 seconds (500ms * 20)
                         clearInterval(interval);
-                        setLoading(false);
 
-                        // Final check to see if session was established
+                        // Final check
                         const { data: { session: finalSession } } = await supabase.auth.getSession();
 
-                        if (!finalSession) {
+                        if (!finalSession && !isVerifiedRef.current) {
+                            console.error("Session verification timed out");
+                            setLoading(false);
                             setError("Unable to verify invite link. Please copy the link and try in a new tab, or ask admin to resend.");
-                        } else {
-                            // Recovered at the last second
-                            setUser(finalSession.user);
-                            setError(null);
                         }
                     }
                 }, 500);
@@ -67,6 +78,7 @@ export default function EmployeeOnboardingPage() {
                 return () => clearInterval(interval);
             } else {
                 // No hash, no session -> Invalid
+                console.warn("No hash or session found");
                 setLoading(false);
                 setError("Invalid or missing invite link.");
             }
@@ -77,6 +89,8 @@ export default function EmployeeOnboardingPage() {
         // Listen for auth state changes (e.g. hash parsing)
         const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
             if (session?.user) {
+                console.log("Auth state change detected:", event);
+                isVerifiedRef.current = true;
                 setUser(session.user);
                 setError(null); // Clear any timeout errors
                 setLoading(false);
