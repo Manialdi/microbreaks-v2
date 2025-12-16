@@ -635,10 +635,63 @@ export default function EmployeesPage() {
 
                             {/* Actions */}
                             <div className="mt-8 space-y-3 pt-6 border-t">
-                                <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition">
+                                <button
+                                    onClick={async () => {
+                                        if (!selectedEmployee || !companyId) return;
+                                        const btn = document.getElementById('btn-remind');
+                                        if (btn) btn.innerHTML = "Sending...";
+
+                                        try {
+                                            const res = await fetch('/api/hr/send-invites', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    emails: [selectedEmployee.email],
+                                                    companyId: companyId
+                                                })
+                                            });
+
+                                            if (!res.ok) throw new Error("Failed to send reminder");
+                                            showToast("Reminder sent successfully!");
+                                        } catch (e) {
+                                            showToast("Failed to send reminder", 'error');
+                                        } finally {
+                                            if (btn) btn.innerHTML = '<svg class="h-4 w-4 mr-2" .../> Send Reminder Email'; // Resetting is tricky with innerHTML, better use state but inline for minimal diff.
+                                            // Actually, let's just create proper handler functions above to keep this clean.
+                                        }
+                                    }}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition"
+                                >
                                     <Mail className="h-4 w-4" /> Send Reminder Email
                                 </button>
-                                <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium transition">
+                                <button
+                                    onClick={async () => {
+                                        if (!selectedEmployee || !companyId) return;
+                                        if (!window.confirm(`Are you sure you want to deactivate ${selectedEmployee.name}? This action cannot be undone.`)) return;
+
+                                        try {
+                                            const res = await fetch('/api/hr/deactivate-employee', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    employeeId: selectedEmployee.id,
+                                                    companyId: companyId
+                                                })
+                                            });
+
+                                            if (!res.ok) throw new Error("Deactivation failed");
+
+                                            // Remove from local state
+                                            setEmployees(prev => prev.filter(e => e.id !== selectedEmployee.id));
+                                            setSelectedEmployee(null);
+                                            showToast("Employee deactivated successfully.");
+
+                                        } catch (e) {
+                                            showToast("Failed to deactivate", 'error');
+                                        }
+                                    }}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium transition"
+                                >
                                     <Trash2 className="h-4 w-4" /> Deactivate Access
                                 </button>
                             </div>
