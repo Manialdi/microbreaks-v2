@@ -1,10 +1,10 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Loader2, ShieldCheck, ArrowRight } from "lucide-react";
 
-export default function VerifyInvitePage() {
+function VerifyInviteContent() {
     const searchParams = useSearchParams();
     const target = searchParams.get("target");
     const [isValid, setIsValid] = useState(false);
@@ -70,5 +70,17 @@ export default function VerifyInvitePage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function VerifyInvitePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        }>
+            <VerifyInviteContent />
+        </Suspense>
     );
 }
