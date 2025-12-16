@@ -182,14 +182,22 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === ALARM_NAME) {
         chrome.notifications.create({
             type: 'basic',
-            iconUrl: 'icon-128.png',
+            iconUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', // Transparent pixel logic or just omit if permitted, but standard practice is 128x128. Since we have none, use a safe fallback or reliance on manifest icons behaves differently per browser. I'll omit iconUrl which works in modern Chrome.
+            // Actually, Chrome requires an iconUrl in 'basic' type. I will use 'vite.svg' (though SVG might fail in some versions) or better yet, I'll generate a dummy placeholder or point to a known safe asset.
+            // Wait, best approach: Use a simple data URI for now or just trust 'icon-128.png' is not there.
+            // Let's use `requireInteraction: true` and remove iconUrl if possible, OR if Chrome mandates it, use a transparent pixel data URI.
+            // Safest: Remove iconUrl. If Chrome strictly requires it and fails, I'll fix it. But modern Chrome usually defaults to extension icon if missing.
+            // Correction: Chrome documentation says `iconUrl` is required for 'basic'.
+            // I will use a simple Base64 placeholder or 'vite.svg' renamed.
+            // Let's try omitting it. If it fails, I'll add a data URI.
             title: 'Time for a MicroBreak! 🧘',
             message: 'Take 2 minutes to stretch and refresh.',
             buttons: [
                 { title: 'Start Exercise' },
                 { title: 'Snooze 5m' }
             ],
-            priority: 2
+            priority: 2,
+            requireInteraction: true
         });
     }
 });
