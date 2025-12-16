@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
     // 1. Reminder Settings
-    const [breakFrequency, setBreakFrequency] = useState("60");
+    const [breakOption, setBreakOption] = useState("60_2"); // Composite key: work_break
     const [workStart, setWorkStart] = useState("09:00");
     const [workEnd, setWorkEnd] = useState("18:00");
     const [rotationType, setRotationType] = useState("random");
@@ -45,14 +45,28 @@ export default function SettingsPage() {
             const { data: profile } = await supabase.from('profiles').select('*, companies(*)').eq('id', user.id).single();
             if (profile) {
                 setHrName(profile.full_name || "");
-                setHrEmail(user.email || ""); // Read-only from auth
+                setHrEmail(user.email || "");
                 setWeeklyDigest(profile.weekly_digest_enabled || false);
-                // Timezone could be added to profile in future schema
 
                 if (profile.companies) {
-                    setCompanyName(profile.companies.name);
-                    setIndustry(profile.companies.industry || "");
-                    setLogoUrl(profile.companies.logo_url);
+                    const company = Array.isArray(profile.companies) ? profile.companies[0] : profile.companies;
+                    setCompanyName(company.name);
+                    setIndustry(company.industry || "");
+                    setLogoUrl(company.logo_url);
+
+                    // Fetch Company Settings
+                    const { data: settings } = await supabase
+                        .from('company_settings')
+                        .select('*')
+                        .eq('company_id', company.id)
+                        .single();
+
+                    if (settings) {
+                        setBreakOption(`${settings.work_interval_minutes}_${settings.break_duration_minutes}`);
+                        if (settings.start_hour) setWorkStart(`${settings.start_hour.toString().padStart(2, '0')}:00`);
+                        if (settings.end_hour) setWorkEnd(`${settings.end_hour.toString().padStart(2, '0')}:00`);
+                        // For simplicty, assuming defaults for others or ignoring strictly for this task
+                    }
                 }
             }
 
@@ -65,9 +79,34 @@ export default function SettingsPage() {
     // --- Handlers ---
 
     const handleSaveReminder = async () => {
-        // Logic to save to `reminder_settings` table (needs to be created in DB)
-        // For now just toast
-        showToast("Reminder preferences updated.");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', user.id).single();
+        if (!profile?.company_id) return showToast("No company found", 'error');
+
+        const [workInterval, breakDuration] = breakOption.split('_').map(Number);
+        const startHour = parseInt(workStart.split(':')[0]);
+        const endHour = parseInt(workEnd.split(':')[0]);
+
+        // Upsert Settings
+        const { error } = await supabase
+            .from('company_settings')
+            .upsert({
+                company_id: profile.company_id,
+                work_interval_minutes: workInterval,
+                break_duration_minutes: breakDuration,
+                start_hour: startHour,
+                end_hour: endHour,
+                // work_days: ... (skipped for brevity as per instructions to focus on freq)
+            });
+
+        if (error) {
+            console.error(error);
+            showToast("Failed to save settings", 'error');
+        } else {
+            showToast("Reminder preferences updated. Employees will sync on next restart.");
+        }
     };
 
     const handleSaveCompany = async () => {
@@ -129,12 +168,11 @@ export default function SettingsPage() {
                             <label className="text-sm font-semibold text-gray-700">Default Break Frequency</label>
                             <select
                                 className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white max-w-sm"
-                                value={breakFrequency}
-                                onChange={(e) => setBreakFrequency(e.target.value)}
+                                value={breakOption}
+                                onChange={(e) => setBreakOption(e.target.value)}
                             >
-                                <option value="30">Every 30 minutes</option>
-                                <option value="45">Every 45 minutes</option>
-                                <option value="60">Every 60 minutes</option>
+                                <option value="60_2">Every 1 Hour (2 min break) - Recommended</option>
+                                <option value="120_5">Every 2 Hours (5 min break)</option>
                             </select>
                         </div>
 
