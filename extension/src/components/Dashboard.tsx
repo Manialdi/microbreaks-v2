@@ -88,9 +88,19 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
                 setStatusMessage('Next break in');
                 chrome.alarms.get('MICROBREAK_ALARM', (alarm) => {
                     if (alarm) {
-                        const diffMs = alarm.scheduledTime - Date.now();
-                        const diffMins = Math.ceil(diffMs / 60000);
-                        setNextBreak(diffMins > 0 ? diffMins : 0);
+                        // Check if alarm is strictly for today (before work end)
+                        const todayEnd = new Date();
+                        todayEnd.setHours(eh, em, 0, 0);
+
+                        if (alarm.scheduledTime > todayEnd.getTime()) {
+                            // Next alarm is tomorrow (or later), meaning we are done for today
+                            setNextBreak('--');
+                            setStatusMessage('See you tomorrow! 🌙');
+                        } else {
+                            const diffMs = alarm.scheduledTime - Date.now();
+                            const diffMins = Math.ceil(diffMs / 60000);
+                            setNextBreak(diffMins > 0 ? diffMins : 0);
+                        }
                     } else {
                         // Fallback if inside work hours but no alarm (e.g. just started)
                         setNextBreak(frequency);
