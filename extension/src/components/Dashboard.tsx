@@ -29,10 +29,18 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
 
         const updateStateFromSettings = (settings: any) => {
             if (!settings) return;
+
+            // Map Integers (9, 17) to Strings ("09:00:00", "17:00:00")
+            const sHour = settings.start_hour !== undefined ? settings.start_hour : 9;
+            const eHour = settings.end_hour !== undefined ? settings.end_hour : 17;
+
+            const newStart = `${sHour.toString().padStart(2, '0')}:00:00`;
+            const newEnd = `${eHour.toString().padStart(2, '0')}:00:00`;
+
             setFrequency(settings.work_interval_minutes || 60);
-            setWorkStart(settings.work_day_start_time || '09:00:00');
-            setWorkEnd(settings.work_day_end_time || '17:00:00');
-            calculateGoal(settings.work_day_start_time, settings.work_day_end_time, settings.work_interval_minutes);
+            setWorkStart(newStart);
+            setWorkEnd(newEnd);
+            calculateGoal(newStart, newEnd, settings.work_interval_minutes);
         };
 
         // 2. Initial Read

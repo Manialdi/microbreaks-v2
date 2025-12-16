@@ -23,27 +23,48 @@ async function syncCompanySettings() {
         if (!sessionData?.session?.user) return;
 
         const user = sessionData.session.user;
+        let companyId = null;
 
-        // Get Employee Details to find Company
+        // A. Try as Employee
         const { data: employee } = await supabase
             .from('employees')
             .select('company_id')
             .eq('auth_user_id', user.id)
+            .limit(1)
             .single();
 
-        if (!employee) return;
+        if (employee) {
+            companyId = employee.company_id;
+        } else {
+            // B. Try as HR Admin (Profile)
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('company_id')
+                .eq('id', user.id)
+                .limit(1)
+                .single();
+
+            if (profile) {
+                companyId = profile.company_id;
+            }
+        }
+
+        if (!companyId) {
+            console.log("No company found for user:", user.email);
+            return;
+        }
 
         // Get Settings
         const { data: settings } = await supabase
             .from('company_settings')
             .select('*')
-            .eq('company_id', employee.company_id)
+            .eq('company_id', companyId)
             .single();
 
         if (settings) {
             await chrome.storage.local.set({
                 settings: settings,
-                companyId: employee.company_id
+                companyId: companyId
             });
             console.log("Settings Synced:", settings);
 
