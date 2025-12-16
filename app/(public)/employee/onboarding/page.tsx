@@ -120,14 +120,6 @@ export default function EmployeeOnboardingPage() {
         }
 
         try {
-            // Ensure session is valid before update
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                setError("Session expired. Please reload the page and try again.");
-                setSubmitting(false);
-                return;
-            }
-
             // 1. Update Password
             const { error: updateError } = await supabase.auth.updateUser({ password });
             if (updateError) throw updateError;
