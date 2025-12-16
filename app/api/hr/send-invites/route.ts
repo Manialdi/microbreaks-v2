@@ -119,13 +119,17 @@ export async function POST(req: NextRequest) {
                 }
 
                 const inviteLink = linkData.properties.action_link;
+                const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.micro-breaks.com';
+
+                // Use Proxy Page to prevent Email Scanners from consuming the token
+                const protectedLink = `${siteUrl}/verify-invite?target=${encodeURIComponent(inviteLink)}`;
 
                 // D. Send Custom Email via Resend
                 const { error: emailError } = await resend.emails.send({
                     from: process.env.RESEND_FROM_EMAIL || 'invites@micro-breaks.com',
                     to: email,
                     subject: 'You have been invited to MicroBreaks',
-                    html: getInviteEmailTemplate(inviteLink)
+                    html: getInviteEmailTemplate(protectedLink)
                 });
 
                 if (emailError) {
