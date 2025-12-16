@@ -21,24 +21,48 @@ export default function EmployeeOnboardingPage() {
     const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
-        // Detect session from URL hash (Auth Helper handles this, but we need to verify)
+        // Detect session from URL hash
         const checkSession = async () => {
-            const { data: { session }, error } = await supabase.auth.getSession();
-
-            if (error || !session) {
-                // Wait a bit, sometimes auth takes a moment to hydrate from hash
-                setTimeout(async () => {
-                    const { data: { session: retrySession } } = await supabase.auth.getSession();
-                    if (!retrySession) {
-                        setError("Invalid or expired invite link. Please ask your administrator to resend the invitation.");
-                    } else {
-                        setUser(retrySession.user);
-                    }
-                    setLoading(false);
-                }, 1000);
-            } else {
-                setUser(session.user);
+            // 1. Check existing session
+            const { data: { session: initialSession } } = await supabase.auth.getSession();
+            if (initialSession) {
+                setUser(initialSession.user);
                 setLoading(false);
+                return;
+            }
+
+            // 2. If no session, but we have a hash, wait for Supabase to process it
+            const hasAuthHash = typeof window !== 'undefined' &&
+                (window.location.hash.includes('access_token') || window.location.hash.includes('type=recovery'));
+
+            if (hasAuthHash) {
+                console.log("Auth hash detected, waiting for session...");
+                // Wait longer for hydration (up to 4s) because of potential redirects
+                let attempts = 0;
+                const interval = setInterval(async () => {
+                    attempts++;
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session) {
+                        clearInterval(interval);
+                        setUser(session.user);
+                        setError(null);
+                        setLoading(false);
+                    } else if (attempts > 8) { // 4 seconds (500ms * 8)
+                        clearInterval(interval);
+                        setLoading(false);
+                        // Only set error if we still don't have a user
+                        // (onAuthStateChange might have caught it properly)
+                        if (!user) {
+                            setError("Unable to verify invite link. Please copy the link and try in a new tab, or ask admin to resend.");
+                        }
+                    }
+                }, 500);
+
+                return () => clearInterval(interval);
+            } else {
+                // No hash, no session -> Invalid
+                setLoading(false);
+                setError("Invalid or missing invite link.");
             }
         };
 
@@ -46,8 +70,10 @@ export default function EmployeeOnboardingPage() {
 
         // Listen for auth state changes (e.g. hash parsing)
         const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-                if (session) setUser(session.user);
+            if (session?.user) {
+                setUser(session.user);
+                setError(null); // Clear any timeout errors
+                setLoading(false);
             }
         });
 
