@@ -70,7 +70,9 @@ async function syncCompanySettings() {
 
             // Calculate Interval
             const interval = settings.work_interval_minutes || 60;
-            updateAlarms(interval);
+            const startHour = settings.start_hour;
+            const endHour = settings.end_hour;
+            updateAlarms(interval, startHour, endHour);
         }
 
     } catch (err) {
@@ -79,13 +81,55 @@ async function syncCompanySettings() {
 }
 
 // 2. Alarm Logic
-function updateAlarms(intervalMinutes: number) {
+function updateAlarms(intervalMinutes: number, startHour?: number, endHour?: number) {
     chrome.alarms.clear(ALARM_NAME);
+
+    // Defaults
+    const sHour = startHour ?? 9;
+    const eHour = endHour ?? 17;
+
+    const now = new Date();
+    const start = new Date();
+    start.setHours(sHour, 0, 0, 0);
+
+    const end = new Date();
+    end.setHours(eHour, 0, 0, 0);
+
+    // If start > end (night shift), assume end is tomorrow? (Keeping simple for now: strictly same day)
+    // If we are past the end of the workday, or before start, we need to handle carefully.
+
+    let nextBreak = new Date(start.getTime());
+
+    // If we are already past the start time, find the next slot
+    if (now > start) {
+        const elapsedMins = (now.getTime() - start.getTime()) / 60000;
+        const cycles = Math.floor(elapsedMins / intervalMinutes) + 1;
+        nextBreak = new Date(start.getTime() + cycles * intervalMinutes * 60000);
+    } else {
+        // Before work starts: First break is start + interval
+        nextBreak = new Date(start.getTime() + intervalMinutes * 60000);
+    }
+
+    // Check if the calculated next break is past end time
+    // Strict check: if nextBreak >= end, we push to tomorrow
+    if (nextBreak.getTime() >= end.getTime()) {
+        // Schedule for tomorrow's first break
+        const tomorrowStart = new Date(start);
+        tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+        nextBreak = new Date(tomorrowStart.getTime() + intervalMinutes * 60000);
+    }
+
+    // Double check: if nextBreak is somehow in the past (edge cases), push it
+    if (nextBreak <= now) {
+        nextBreak = new Date(now.getTime() + intervalMinutes * 60000);
+    }
+
     chrome.alarms.create(ALARM_NAME, {
-        delayInMinutes: intervalMinutes,
+        when: nextBreak.getTime(),
         periodInMinutes: intervalMinutes
     });
-    console.log(`Alarm set for every ${intervalMinutes} minutes`);
+
+    console.log(`Alarm set for ${nextBreak.toLocaleTimeString()} (Every ${intervalMinutes}m)`);
 }
 
 chrome.runtime.onInstalled.addListener(() => {
