@@ -1,10 +1,28 @@
 
+"use client";
+
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, Activity, Smile, BarChart3, Heart, Zap, Users, Globe, Settings, Bell, LineChart, Clock, Move, LayoutDashboard, CheckCircle, Check, Download } from "lucide-react"
 import { FaqSection } from "@/components/landing/FaqSection"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function LandingPage() {
+    const router = useRouter();
+
+    useEffect(() => {
+        // Safety Redirect for Auth Tokens (if Supabase redirects to root)
+        if (typeof window !== 'undefined' && window.location.hash) {
+            const hash = window.location.hash;
+            if (hash.includes('type=recovery') || hash.includes('access_token')) {
+                // If it looks like an employee invite token, send them to onboarding
+                // We preserve the hash so the onboarding page can consume it
+                router.replace(`/employee/onboarding${hash}`);
+            }
+        }
+    }, [router]);
+
     return (
         <div className="bg-gradient-to-b from-blue-50/50 to-white">
             {/* Hero Section */}
