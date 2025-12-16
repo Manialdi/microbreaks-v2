@@ -89,14 +89,54 @@ function updateAlarms(intervalMinutes: number, startHour?: number, endHour?: num
     const eHour = endHour ?? 17;
 
     const now = new Date();
+
     const start = new Date();
     start.setHours(sHour, 0, 0, 0);
 
     const end = new Date();
     end.setHours(eHour, 0, 0, 0);
 
-    // If start > end (night shift), assume end is tomorrow? (Keeping simple for now: strictly same day)
-    // If we are past the end of the workday, or before start, we need to handle carefully.
+    // Handle Overnight Shift (e.g., 18:00 to 02:00)
+    // If end hour is smaller than start hour, end time is tomorrow.
+    if (eHour < sHour) {
+        end.setDate(end.getDate() + 1);
+
+        // If "now" is early morning (e.g. 1 AM) and shift started yesterday eventing (6 PM),
+        // we need to make sure 'start' is yesterday, not today 6 PM.
+        // Logic: If now < end (2 AM) and now < start (6 PM), then we are in the tail end of the shift.
+        if (now < end && now.getHours() < sHour) {
+            start.setDate(start.getDate() - 1);
+            end.setDate(end.getDate() - 1); // Reset end to be "today" early morning relative to the start
+            // Wait, keeping date math simple:
+            // Shift is [Yesterday 18:00] to [Today 02:00]
+            // If Now is [Today 01:00], we want Start to be Yesterday.
+        }
+    }
+
+    // Correction for "tail end" logic above was slightly confusing. Let's simplify absolute timestamps.
+    // If eHour < sHour (Overnight):
+    // Case A: Now is 20:00 (Evening). Start=Today 18:00. End=Tomorrow 02:00. Correct.
+    // Case B: Now is 01:00 (Morning). Start=Today 18:00 (Wrong, should be yest). End=Tomorrow 02:00 (Wrong, should be today).
+
+    if (eHour < sHour) {
+        // Reset and recalculate carefully
+        const currentHour = now.getHours();
+
+        // adjustable Start/End based on where we are
+        if (currentHour < eHour) {
+            // We are in the early morning part of the shift (00:00 - 02:00)
+            // Start was yesterday
+            start.setDate(start.getDate() - 1);
+            end.setDate(now.getDate()); // End is today
+            end.setHours(eHour, 0, 0, 0);
+        } else {
+            // We are in the evening part of the shift (18:00 - 23:59)
+            // Start is today. End is tomorrow.
+            start.setHours(sHour, 0, 0, 0); // Reset in case
+            end.setDate(now.getDate() + 1);
+            end.setHours(eHour, 0, 0, 0);
+        }
+    }
 
     let nextBreak = new Date(start.getTime());
 
@@ -111,12 +151,12 @@ function updateAlarms(intervalMinutes: number, startHour?: number, endHour?: num
     }
 
     // Check if the calculated next break is past end time
-    // Strict check: if nextBreak >= end, we push to tomorrow
     if (nextBreak.getTime() >= end.getTime()) {
         // Schedule for tomorrow's first break
-        const tomorrowStart = new Date(start);
-        tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-        nextBreak = new Date(tomorrowStart.getTime() + intervalMinutes * 60000);
+        // If it was overnight, "tomorrow" means the next start cycle.
+        const nextStart = new Date(start);
+        nextStart.setDate(nextStart.getDate() + 1);
+        nextBreak = new Date(nextStart.getTime() + intervalMinutes * 60000);
     }
 
     // Double check: if nextBreak is somehow in the past (edge cases), push it

@@ -75,37 +75,52 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
             const startMins = sh * 60 + sm;
             const endMins = eh * 60 + em;
 
-            if (currentMins > endMins) {
-                // After Work
-                setNextBreak('--');
-                setStatusMessage('See you tomorrow! 🌙');
-            } else if (currentMins < startMins) {
-                // Before Work
-                setNextBreak('--');
-                setStatusMessage(`Starts at ${formatTime(workStart)} ☀️`);
+            const isOvernight = startMins > endMins;
+            let isWorking = false;
+            let isBeforeStart = false;
+            let isAfterEnd = false;
+
+            if (isOvernight) {
+                // Overnight Shift (e.g. 18:00 to 02:00)
+                // Working if: >= 18:00 OR < 02:00
+                isWorking = currentMins >= startMins || currentMins < endMins;
+
+                // Keep "Before Start" simple: if between end and start
+                if (!isWorking) {
+                    // Ideally check which one is closer, but simple logic:
+                    setStatusMessage(`See you tomorrow! 🌙`);
+                }
             } else {
+                // Standard Day (e.g. 09:00 to 17:00)
+                isWorking = currentMins >= startMins && currentMins < endMins;
+                isBeforeStart = currentMins < startMins;
+                isAfterEnd = currentMins >= endMins;
+            }
+
+            if (isWorking) {
                 // During Work - Check Alarm
                 setStatusMessage('Next break in');
                 chrome.alarms.get('MICROBREAK_ALARM', (alarm) => {
                     if (alarm) {
-                        // Check if alarm is strictly for today (before work end)
-                        const todayEnd = new Date();
-                        todayEnd.setHours(eh, em, 0, 0);
-
-                        if (alarm.scheduledTime > todayEnd.getTime()) {
-                            // Next alarm is tomorrow (or later), meaning we are done for today
-                            setNextBreak('--');
-                            setStatusMessage('See you tomorrow! 🌙');
-                        } else {
-                            const diffMs = alarm.scheduledTime - Date.now();
-                            const diffMins = Math.ceil(diffMs / 60000);
-                            setNextBreak(diffMins > 0 ? diffMins : 0);
-                        }
+                        // Check if alarm is strictly for today's session
+                        // Complex for overnight: check if alarm > "end time relative to now"
+                        // Simplified: Just show the countdown if it exists.
+                        const diffMs = alarm.scheduledTime - Date.now();
+                        const diffMins = Math.ceil(diffMs / 60000);
+                        setNextBreak(diffMins > 0 ? diffMins : 0);
                     } else {
-                        // Fallback if inside work hours but no alarm (e.g. just started)
+                        // Fallback
                         setNextBreak(frequency);
                     }
                 });
+            } else {
+                // Not Working
+                setNextBreak('--');
+                if (isBeforeStart) {
+                    setStatusMessage(`Starts at ${formatTime(workStart)} ☀️`);
+                } else {
+                    setStatusMessage('See you tomorrow! 🌙');
+                }
             }
         };
 
