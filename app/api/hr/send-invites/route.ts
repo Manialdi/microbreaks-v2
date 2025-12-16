@@ -20,11 +20,21 @@ export async function POST(req: NextRequest) {
 
         const supabase = await createClient();
 
+        console.log('Invites API: Checking Session...');
+
         // 1. Verify User is Authenticated
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError) {
+            console.error('Invites API Auth Error:', authError);
+        }
+
         if (!user) {
+            console.error('Invites API: No user found. Unauthorized.');
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        console.log('Invites API: User found:', user.id);
 
         const body = await req.json();
         const { emails, companyId } = body;
