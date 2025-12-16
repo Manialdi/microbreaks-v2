@@ -153,7 +153,8 @@ export async function POST(req: NextRequest) {
                         .update({
                             company_id: companyId,
                             status: 'pending',
-                            created_at: new Date().toISOString()
+                            created_at: new Date().toISOString(),
+                            activation_token: crypto.randomUUID() // Satisfy constraint
                         })
                         .eq('id', existingInvite.id);
                     inviteId = existingInvite.id;
@@ -164,7 +165,8 @@ export async function POST(req: NextRequest) {
                         .insert({
                             company_id: companyId,
                             email: email,
-                            status: 'pending'
+                            status: 'pending',
+                            activation_token: crypto.randomUUID() // Satisfy constraint
                         })
                         .select('id')
                         .single();
