@@ -38,5 +38,7 @@ yarn-error.log*
 
 # typescript
 
-# Exclude extension folder
-extension/
+# Extension (Tracked, but ignore artifacts)
+extension/node_modules/
+extension/dist/
+extension/*.zip

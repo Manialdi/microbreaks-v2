@@ -1,0 +1,32 @@
+{
+    "manifest_version": 3,
+    "name": "Microbreaks - Wellness for Work",
+    "version": "1.0.0",
+    "description": "Stay active and healthy with regular microbreaks and guided exercises.",
+    "action": {
+        "default_popup": "index.html"
+    },
+    "background": {
+        "service_worker": "src/background/index.ts",
+        "type": "module"
+    },
+    "permissions": [
+        "storage",
+        "alarms",
+        "notifications"
+    ],
+    "host_permissions": [
+        "https://*.supabase.co/*"
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "videos/*",
+                "assets/*"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ]
+}

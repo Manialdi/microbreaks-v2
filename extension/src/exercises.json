@@ -1,0 +1,42 @@
+[
+    {
+        "id": 1,
+        "title": "Neck Rolls",
+        "duration": 60,
+        "instructions": "Gently roll your neck in a circular motion. 30 seconds clockwise, 30 seconds counter-clockwise.",
+        "category": "Neck",
+        "image": "https://placehold.co/400x300/e2e8f0/1e293b?text=Neck+Rolls"
+    },
+    {
+        "id": 2,
+        "title": "Wrist Flexor Stretch",
+        "duration": 60,
+        "instructions": "Extend your arm with palm facing up. Use the other hand to gently pull fingers back towards you.",
+        "category": "Wrists",
+        "image": "https://placehold.co/400x300/e2e8f0/1e293b?text=Wrist+Stretch"
+    },
+    {
+        "id": 3,
+        "title": "Seated Spine Twist",
+        "duration": 60,
+        "instructions": "Sit tall. Twist your torso to the right, holding the chair back. Hold for 30s, then switch sides.",
+        "category": "Back",
+        "image": "https://placehold.co/400x300/e2e8f0/1e293b?text=Spine+Twist"
+    },
+    {
+        "id": 4,
+        "title": "Eye Palming",
+        "duration": 60,
+        "instructions": "Rub palms together to generate heat. Cup them over closed eyes without pressing. Breathe deeply.",
+        "category": "Eyes",
+        "image": "https://placehold.co/400x300/e2e8f0/1e293b?text=Eye+Palming"
+    },
+    {
+        "id": 5,
+        "title": "Shoulder Shrugs",
+        "duration": 60,
+        "instructions": "Lift shoulders towards ears, hold for 3 seconds, then release. Repeat.",
+        "category": "Shoulders",
+        "image": "https://placehold.co/400x300/e2e8f0/1e293b?text=Shoulder+Shrugs"
+    }
+]
