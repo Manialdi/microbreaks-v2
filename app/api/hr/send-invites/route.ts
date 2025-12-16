@@ -153,7 +153,6 @@ export async function POST(req: NextRequest) {
                         .update({
                             company_id: companyId,
                             status: 'pending',
-                            auth_user_id: authUserId,
                             created_at: new Date().toISOString()
                         })
                         .eq('id', existingInvite.id);
@@ -165,8 +164,7 @@ export async function POST(req: NextRequest) {
                         .insert({
                             company_id: companyId,
                             email: email,
-                            status: 'pending',
-                            auth_user_id: authUserId
+                            status: 'pending'
                         })
                         .select('id')
                         .single();
