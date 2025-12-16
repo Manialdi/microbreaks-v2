@@ -118,12 +118,14 @@ export async function POST(req: NextRequest) {
                 }
 
                 // D. Log Invitation to get ID (Moved Up)
-                const { data: inviteRecord, error: inviteDbError } = await supabaseAdmin.from('invitations').insert({
+                // Use upsert to handle re-invites (existing email)
+                const { data: inviteRecord, error: inviteDbError } = await supabaseAdmin.from('invitations').upsert({
                     company_id: companyId,
                     email: email,
                     status: 'pending',
-                    auth_user_id: authUserId
-                }).select('id').single();
+                    auth_user_id: authUserId,
+                    created_at: new Date().toISOString() // Update timestamp on re-invite
+                }, { onConflict: 'email' }).select('id').single();
 
                 if (inviteDbError || !inviteRecord) {
                     throw new Error(`DB Insert Failed: ${inviteDbError?.message}`);
