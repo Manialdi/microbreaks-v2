@@ -107,11 +107,13 @@ export async function POST(req: NextRequest) {
 
                 // C. Upsert Employee Record (Manual check to be robust against missing DB constraints)
                 if (authUserId) {
-                    const { data: existingEmp } = await supabaseAdmin
+                    const { data: existingEmps } = await supabaseAdmin
                         .from('employees')
                         .select('id')
                         .eq('email', email)
-                        .single();
+                        .limit(1);
+
+                    const existingEmp = existingEmps?.[0];
 
                     if (existingEmp) {
                         await supabaseAdmin
@@ -121,7 +123,7 @@ export async function POST(req: NextRequest) {
                                 status: 'invited', // Reset status if re-inviting
                                 auth_user_id: authUserId
                             })
-                            .eq('email', email);
+                            .eq('id', existingEmp.id);
                     } else {
                         await supabaseAdmin
                             .from('employees')
@@ -136,11 +138,13 @@ export async function POST(req: NextRequest) {
 
                 // D. Log Invitation (Manual Upsert)
                 let inviteId;
-                const { data: existingInvite } = await supabaseAdmin
+                const { data: existingInvites } = await supabaseAdmin
                     .from('invitations')
                     .select('id')
                     .eq('email', email)
-                    .single();
+                    .limit(1);
+
+                const existingInvite = existingInvites?.[0];
 
                 if (existingInvite) {
                     // Update existing invite
