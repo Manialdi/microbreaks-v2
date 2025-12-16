@@ -176,27 +176,6 @@ chrome.runtime.onInstalled.addListener(() => {
     console.log("MicroBreaks Extension Installed");
     chrome.alarms.clearAll();
     syncCompanySettings();
-
-    // Debugging: Log scheduled alarms
-    setTimeout(() => {
-        chrome.alarms.getAll((alarms) => {
-            console.log("Active Alarms:", alarms);
-            if (alarms.length === 0) console.warn("WARNING: No alarms scheduled!");
-        });
-    }, 2000);
-
-    // Debugging: Test Notification immediately
-    setTimeout(() => {
-        console.log("Attempting Test Notification...");
-        chrome.notifications.create({
-            type: 'basic',
-            iconUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
-            title: 'MicroBreaks: Test Notification 🔔',
-            message: 'If you see this, notifications are working!',
-            priority: 2,
-            requireInteraction: true
-        });
-    }, 3000);
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
