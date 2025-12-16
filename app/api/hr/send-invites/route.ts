@@ -105,35 +105,81 @@ export async function POST(req: NextRequest) {
                 // Logic: If we can't get ID, we can't generateLink easily either? 
                 // Wait, generateLink only needs email. So we are good for email sending!
 
-                // C. Upsert Employee Record (Get/Confirm ID)
+                // C. Upsert Employee Record (Manual check to be robust against missing DB constraints)
                 if (authUserId) {
-                    await supabaseAdmin
+                    const { data: existingEmp } = await supabaseAdmin
                         .from('employees')
-                        .upsert({
-                            company_id: companyId,
-                            email: email,
-                            status: 'invited',
-                            auth_user_id: authUserId
-                        }, { onConflict: 'email' } as any);
+                        .select('id')
+                        .eq('email', email)
+                        .single();
+
+                    if (existingEmp) {
+                        await supabaseAdmin
+                            .from('employees')
+                            .update({
+                                company_id: companyId,
+                                status: 'invited', // Reset status if re-inviting
+                                auth_user_id: authUserId
+                            })
+                            .eq('email', email);
+                    } else {
+                        await supabaseAdmin
+                            .from('employees')
+                            .insert({
+                                company_id: companyId,
+                                email: email,
+                                status: 'invited',
+                                auth_user_id: authUserId
+                            });
+                    }
                 }
 
-                // D. Log Invitation to get ID (Moved Up)
-                // Use upsert to handle re-invites (existing email)
-                const { data: inviteRecord, error: inviteDbError } = await supabaseAdmin.from('invitations').upsert({
-                    company_id: companyId,
-                    email: email,
-                    status: 'pending',
-                    auth_user_id: authUserId,
-                    created_at: new Date().toISOString() // Update timestamp on re-invite
-                }, { onConflict: 'email' }).select('id').single();
+                // D. Log Invitation (Manual Upsert)
+                let inviteId;
+                const { data: existingInvite } = await supabaseAdmin
+                    .from('invitations')
+                    .select('id')
+                    .eq('email', email)
+                    .single();
 
-                if (inviteDbError || !inviteRecord) {
-                    throw new Error(`DB Insert Failed: ${inviteDbError?.message}`);
+                if (existingInvite) {
+                    // Update existing invite
+                    await supabaseAdmin
+                        .from('invitations')
+                        .update({
+                            company_id: companyId,
+                            status: 'pending',
+                            auth_user_id: authUserId,
+                            created_at: new Date().toISOString()
+                        })
+                        .eq('id', existingInvite.id);
+                    inviteId = existingInvite.id;
+                } else {
+                    // Insert new
+                    const { data: newInvite, error: insertError } = await supabaseAdmin
+                        .from('invitations')
+                        .insert({
+                            company_id: companyId,
+                            email: email,
+                            status: 'pending',
+                            auth_user_id: authUserId
+                        })
+                        .select('id')
+                        .single();
+
+                    if (insertError) throw new Error(`Invite Insert Failed: ${insertError.message}`);
+                    inviteId = newInvite.id;
+                }
+
+                if (!inviteId) {
+                    throw new Error("Could not retrieve invitation ID");
                 }
 
                 // E. Construct Secure ID-based Link
                 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.micro-breaks.com';
-                const protectedLink = `${siteUrl}/verify-invite?id=${inviteRecord.id}`;
+                const protectedLink = `${siteUrl}/verify-invite?id=${inviteId}`;
+
+
 
                 // F. Send Email
                 const { error: emailError } = await resend.emails.send({
