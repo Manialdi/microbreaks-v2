@@ -105,26 +105,35 @@ export async function POST(req: NextRequest) {
                 // Logic: If we can't get ID, we can't generateLink easily either? 
                 // Wait, generateLink only needs email. So we are good for email sending!
 
-                // C. Generate Magic Link (Recovery Type = Set Password)
-                const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-                    type: 'recovery',
-                    email: email,
-                    options: {
-                        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/employee/onboarding`
-                    }
-                });
-
-                if (linkError || !linkData.properties?.action_link) {
-                    throw new Error(linkError?.message || "Failed to generate invite link");
+                // C. Upsert Employee Record (Get/Confirm ID)
+                if (authUserId) {
+                    await supabaseAdmin
+                        .from('employees')
+                        .upsert({
+                            company_id: companyId,
+                            email: email,
+                            status: 'invited',
+                            auth_user_id: authUserId
+                        }, { onConflict: 'email' } as any);
                 }
 
-                const inviteLink = linkData.properties.action_link;
+                // D. Log Invitation to get ID (Moved Up)
+                const { data: inviteRecord, error: inviteDbError } = await supabaseAdmin.from('invitations').insert({
+                    company_id: companyId,
+                    email: email,
+                    status: 'pending',
+                    auth_user_id: authUserId
+                }).select('id').single();
+
+                if (inviteDbError || !inviteRecord) {
+                    throw new Error(`DB Insert Failed: ${inviteDbError?.message}`);
+                }
+
+                // E. Construct Secure ID-based Link
                 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.micro-breaks.com';
+                const protectedLink = `${siteUrl}/verify-invite?id=${inviteRecord.id}`;
 
-                // Use Proxy Page to prevent Email Scanners from consuming the token
-                const protectedLink = `${siteUrl}/verify-invite?target=${encodeURIComponent(inviteLink)}`;
-
-                // D. Send Custom Email via Resend
+                // F. Send Email
                 const { error: emailError } = await resend.emails.send({
                     from: process.env.RESEND_FROM_EMAIL || 'invites@micro-breaks.com',
                     to: email,
@@ -136,28 +145,7 @@ export async function POST(req: NextRequest) {
                     throw new Error(`Email sending failed: ${emailError.message}`);
                 }
 
-                // E. Upsert Employee Record (Only if we have ID, otherwise invite works but DB status might trail)
-                if (authUserId) {
-                    await supabaseAdmin
-                        .from('employees')
-                        .upsert({
-                            company_id: companyId,
-                            email: email,
-                            status: 'invited',
-                            auth_user_id: authUserId
-                        }, { onConflict: 'email' } as any);
-
-                    // F. Log Invitation
-                    await supabaseAdmin.from('invitations').insert({
-                        company_id: companyId,
-                        email: email,
-                        status: 'pending',
-                        auth_user_id: authUserId
-                    });
-                    results.push({ email, status: 'success', id: authUserId });
-                } else {
-                    results.push({ email, status: 'success', message: "Invite sent (ID lookup skipped)" });
-                }
+                results.push({ email, status: 'success', id: authUserId });
 
             } catch (err: any) {
                 console.error(`Process failed for ${email}:`, err);

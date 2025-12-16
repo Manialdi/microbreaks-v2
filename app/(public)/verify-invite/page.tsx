@@ -6,29 +6,56 @@ import { Loader2, ShieldCheck, ArrowRight } from "lucide-react";
 
 function VerifyInviteContent() {
     const searchParams = useSearchParams();
-    const target = searchParams.get("target");
+    const inviteId = searchParams.get("id"); // Now using ID
     const [isValid, setIsValid] = useState(false);
     const [redirecting, setRedirecting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (target) {
-            // Simple validation to ensure we have a link
+        if (inviteId) {
             setIsValid(true);
         }
-    }, [target]);
+    }, [inviteId]);
 
-    const handleContinue = () => {
-        if (!target) return;
+    const handleContinue = async () => {
+        if (!inviteId) return;
         setRedirecting(true);
-        window.location.href = target;
+        setError(null);
+
+        try {
+            // Call API to generate fresh token
+            const res = await fetch('/api/verify-invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ inviteId })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || "Verification failed");
+            }
+
+            if (data.url) {
+                // Redirect to the fresh one-time link
+                window.location.href = data.url;
+            } else {
+                throw new Error("No redirect URL received");
+            }
+
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message);
+            setRedirecting(false);
+        }
     };
 
-    if (!target) {
+    if (!inviteId) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
                 <div className="text-center max-w-md">
                     <h1 className="text-xl font-bold text-gray-900 mb-2">Invalid Verification Link</h1>
-                    <p className="text-gray-500">The link you followed appears to be incomplete.</p>
+                    <p className="text-gray-500">The link appears to be missing the invitation ID.</p>
                 </div>
             </div>
         );
@@ -44,8 +71,14 @@ function VerifyInviteContent() {
 
                 <h1 className="text-2xl font-bold text-gray-900 mb-3">Verify Invitation</h1>
                 <p className="text-gray-500 mb-8">
-                    To keep your account secure and prevent link expiration, please click the button below to continue.
+                    To keep your account secure, we generate a secure access token only when you are ready. Click below to continue.
                 </p>
+
+                {error && (
+                    <div className="mb-6 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
+                        {error}
+                    </div>
+                )}
 
                 <button
                     onClick={handleContinue}
@@ -55,7 +88,7 @@ function VerifyInviteContent() {
                     {redirecting ? (
                         <>
                             <Loader2 className="h-5 w-5 animate-spin" />
-                            Verifying...
+                            Securing Connection...
                         </>
                     ) : (
                         <>
