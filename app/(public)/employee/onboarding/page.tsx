@@ -24,15 +24,19 @@ export default function EmployeeOnboardingPage() {
     const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
+        let mounted = true;
+
         // Detect session from URL hash
         const checkSession = async () => {
             // 1. Check existing session
             const { data: { session: initialSession } } = await supabase.auth.getSession();
             if (initialSession) {
                 console.log("Initial session found");
-                isVerifiedRef.current = true;
-                setUser(initialSession.user);
-                setLoading(false);
+                if (mounted) {
+                    isVerifiedRef.current = true;
+                    setUser(initialSession.user);
+                    setLoading(false);
+                }
                 return;
             }
 
@@ -45,6 +49,10 @@ export default function EmployeeOnboardingPage() {
                 // Wait longer for hydration (up to 10s)
                 let attempts = 0;
                 const interval = setInterval(async () => {
+                    if (!mounted) {
+                        clearInterval(interval);
+                        return;
+                    }
                     attempts++;
 
                     // Check if already verified by listener
@@ -58,16 +66,18 @@ export default function EmployeeOnboardingPage() {
                         console.log("Session found via polling");
                         isVerifiedRef.current = true;
                         clearInterval(interval);
-                        setUser(session.user);
-                        setError(null);
-                        setLoading(false);
+                        if (mounted) {
+                            setUser(session.user);
+                            setError(null);
+                            setLoading(false);
+                        }
                     } else if (attempts > 20) { // 10 seconds (500ms * 20)
                         clearInterval(interval);
 
                         // Final check
                         const { data: { session: finalSession } } = await supabase.auth.getSession();
 
-                        if (!finalSession && !isVerifiedRef.current) {
+                        if (!finalSession && !isVerifiedRef.current && mounted) {
                             console.error("Session verification timed out");
                             setLoading(false);
                             setError("Unable to verify invite link. Please copy the link and try in a new tab, or ask admin to resend.");
@@ -77,10 +87,29 @@ export default function EmployeeOnboardingPage() {
 
                 return () => clearInterval(interval);
             } else {
-                // No hash, no session -> Invalid
-                console.warn("No hash or session found");
-                setLoading(false);
-                setError("Invalid or missing invite link.");
+                // No hash found. It might have been consumed by Supabase already.
+                // Give it a moment (2s) to see if session initializes.
+                setTimeout(async () => {
+                    if (!mounted) return;
+                    if (isVerifiedRef.current) return;
+
+                    const { data: { session: lateSession } } = await supabase.auth.getSession();
+                    if (lateSession) {
+                        console.log("Late session found");
+                        if (mounted) {
+                            setUser(lateSession.user);
+                            isVerifiedRef.current = true;
+                            setLoading(false);
+                        }
+                        return;
+                    }
+
+                    console.warn("No hash or session found after wait");
+                    if (mounted) {
+                        setLoading(false);
+                        setError("Invalid or missing invite link.");
+                    }
+                }, 2000);
             }
         };
 
@@ -88,7 +117,7 @@ export default function EmployeeOnboardingPage() {
 
         // Listen for auth state changes (e.g. hash parsing)
         const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-            if (session?.user) {
+            if (session?.user && mounted) {
                 console.log("Auth state change detected:", event);
                 isVerifiedRef.current = true;
                 setUser(session.user);
@@ -98,6 +127,7 @@ export default function EmployeeOnboardingPage() {
         });
 
         return () => {
+            mounted = false;
             authListener.subscription.unsubscribe();
         };
     }, []);
