@@ -653,6 +653,7 @@ export default function EmployeesPage() {
 
                                             if (!res.ok) throw new Error("Failed to send reminder");
                                             showToast("Reminder sent successfully!");
+                                            window.alert("Reminder email sent successfully!");
                                         } catch (e) {
                                             showToast("Failed to send reminder", 'error');
                                         } finally {
