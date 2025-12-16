@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Eye, EyeOff, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function EmployeeOnboardingPage() {
-    const supabase = createClient();
+    const [supabase] = useState(() => createClient());
     const router = useRouter();
 
     const [loading, setLoading] = useState(true);
