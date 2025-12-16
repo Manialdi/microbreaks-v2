@@ -50,10 +50,16 @@ export default function EmployeeOnboardingPage() {
                     } else if (attempts > 8) { // 4 seconds (500ms * 8)
                         clearInterval(interval);
                         setLoading(false);
-                        // Only set error if we still don't have a user
-                        // (onAuthStateChange might have caught it properly)
-                        if (!user) {
+
+                        // Final check to see if session was established
+                        const { data: { session: finalSession } } = await supabase.auth.getSession();
+
+                        if (!finalSession) {
                             setError("Unable to verify invite link. Please copy the link and try in a new tab, or ask admin to resend.");
+                        } else {
+                            // Recovered at the last second
+                            setUser(finalSession.user);
+                            setError(null);
                         }
                     }
                 }, 500);
@@ -100,6 +106,14 @@ export default function EmployeeOnboardingPage() {
         }
 
         try {
+            // Ensure session is valid before update
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                setError("Session expired. Please reload the page and try again.");
+                setSubmitting(false);
+                return;
+            }
+
             // 1. Update Password
             const { error: updateError } = await supabase.auth.updateUser({ password });
             if (updateError) throw updateError;
