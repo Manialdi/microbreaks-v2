@@ -208,7 +208,9 @@ export default function EmployeesPage() {
             const success = results.filter((r: any) => r.status === 'success');
 
             if (failed.length > 0) {
-                showToast(`Sent ${success.length}, Failed ${failed.length}. Check console.`, 'error');
+                // Show specific error from server
+                const errMsg = failed[0].message || "Check console for details";
+                showToast(`Failed: ${errMsg}`, 'error');
                 console.error("Failed emails:", failed);
             } else {
                 showToast(`Invites sent to ${success.length} employees successfully.`);
