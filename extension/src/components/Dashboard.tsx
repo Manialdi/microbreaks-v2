@@ -1,12 +1,23 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Flame, Play, LogOut, Clock, Calendar } from 'lucide-react';
+import { Flame, Play, LogOut, Clock, Calendar, Moon, Sun } from 'lucide-react';
+
+// Helper: 18:00:00 -> 6:00 PM
+const formatTime = (timeStr: string) => {
+    if (!timeStr) return '--:--';
+    const [h, m] = timeStr.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hours = h % 12 || 12;
+    const minutes = m < 10 ? `0${m}` : m;
+    return `${hours}:${minutes} ${period}`;
+};
 
 export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }) {
     const [nextBreak, setNextBreak] = useState<number | string>('--');
+    const [statusMessage, setStatusMessage] = useState('Next break in');
     const [frequency, setFrequency] = useState(60);
-    const [workStart, setWorkStart] = useState('09:00');
-    const [workEnd, setWorkEnd] = useState('17:00');
+    const [workStart, setWorkStart] = useState('09:00:00');
+    const [workEnd, setWorkEnd] = useState('17:00:00');
     const [stats, setStats] = useState({ goal: 8, current: 0, streak: 5 });
     const [userEmail, setUserEmail] = useState('');
 
@@ -19,8 +30,8 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
         const updateStateFromSettings = (settings: any) => {
             if (!settings) return;
             setFrequency(settings.work_interval_minutes || 60);
-            setWorkStart(settings.work_day_start_time || '09:00');
-            setWorkEnd(settings.work_day_end_time || '17:00');
+            setWorkStart(settings.work_day_start_time || '09:00:00');
+            setWorkEnd(settings.work_day_end_time || '17:00:00');
             calculateGoal(settings.work_day_start_time, settings.work_day_end_time, settings.work_interval_minutes);
         };
 
@@ -31,7 +42,7 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
             }
         });
 
-        // 3. Listen for Storage Changes (Live Sync)
+        // 3. Update Listener
         const storageListener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
             if (areaName === 'local' && changes.settings?.newValue) {
                 updateStateFromSettings(changes.settings.newValue);
@@ -39,27 +50,52 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
         };
         chrome.storage.onChanged.addListener(storageListener);
 
-        // 4. Poll for Next Break
-        const checkAlarm = () => {
-            chrome.alarms.get('MICROBREAK_ALARM', (alarm) => {
-                if (alarm) {
-                    const diffMs = alarm.scheduledTime - Date.now();
-                    const diffMins = Math.ceil(diffMs / 60000);
-                    setNextBreak(diffMins > 0 ? diffMins : 0);
-                } else {
-                    setNextBreak('--');
-                }
-            });
-        };
-
-        checkAlarm();
-        const interval = setInterval(checkAlarm, 30000); // Check every 30s
-
         return () => {
-            clearInterval(interval);
             chrome.storage.onChanged.removeListener(storageListener);
         };
     }, []);
+
+    // 4. Timer Logic (Separate Effect to depend on workStart/End)
+    useEffect(() => {
+        const checkStatus = () => {
+            const now = new Date();
+            const currentMins = now.getHours() * 60 + now.getMinutes();
+
+            // Parse Work Hours
+            const [sh, sm] = workStart.split(':').map(Number);
+            const [eh, em] = workEnd.split(':').map(Number);
+            const startMins = sh * 60 + sm;
+            const endMins = eh * 60 + em;
+
+            if (currentMins > endMins) {
+                // After Work
+                setNextBreak('--');
+                setStatusMessage('See you tomorrow! 🌙');
+            } else if (currentMins < startMins) {
+                // Before Work
+                setNextBreak('--');
+                setStatusMessage(`Starts at ${formatTime(workStart)} ☀️`);
+            } else {
+                // During Work - Check Alarm
+                setStatusMessage('Next break in');
+                chrome.alarms.get('MICROBREAK_ALARM', (alarm) => {
+                    if (alarm) {
+                        const diffMs = alarm.scheduledTime - Date.now();
+                        const diffMins = Math.ceil(diffMs / 60000);
+                        setNextBreak(diffMins > 0 ? diffMins : 0);
+                    } else {
+                        // Fallback if inside work hours but no alarm (e.g. just started)
+                        setNextBreak(frequency);
+                    }
+                });
+            }
+        };
+
+        checkStatus();
+        const interval = setInterval(checkStatus, 30000); // Check every 30s
+        return () => clearInterval(interval);
+
+    }, [workStart, workEnd, frequency]);
 
     const calculateGoal = (start: string, end: string, freq: number) => {
         if (!start || !end || !freq) return;
@@ -105,14 +141,27 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
                 </button>
 
                 {/* 2. Timer Card */}
-                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 text-center">
-                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Next break in</p>
-                    <div className="text-7xl font-black text-gray-800 flex justify-center items-baseline">
-                        {nextBreak}<span className="text-2xl font-bold ml-2 text-gray-300">min</span>
-                    </div>
-                    <div className="mt-2 flex justify-center text-xs text-gray-400">
-                        Based on {frequency}m frequency
-                    </div>
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center min-h-[160px]">
+                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">{statusMessage}</p>
+
+                    {nextBreak !== '--' ? (
+                        <>
+                            <div className="text-7xl font-black text-gray-800 flex justify-center items-baseline">
+                                {nextBreak}<span className="text-2xl font-bold ml-2 text-gray-300">min</span>
+                            </div>
+                            <div className="mt-2 flex justify-center text-xs text-gray-400">
+                                Based on {frequency}m frequency
+                            </div>
+                        </>
+                    ) : (
+                        <div className="py-2">
+                            {statusMessage.includes('tomorrow') ?
+                                <Moon className="h-10 w-10 text-indigo-400 mx-auto" /> :
+                                <Sun className="h-10 w-10 text-amber-400 mx-auto" />
+                            }
+                            <p className="text-sm text-gray-500 mt-2 font-medium">Relax and recharge.</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* 3. Stats Row (Side by Side) */}
@@ -151,7 +200,7 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
                                 <Calendar className="h-3 w-3" /> Work Hours
                             </label>
                             <span className="text-sm font-bold text-gray-800 bg-gray-50 px-3 py-1 rounded-lg">
-                                {workStart} - {workEnd}
+                                {formatTime(workStart)} - {formatTime(workEnd)}
                             </span>
                         </div>
                     </div>
@@ -160,4 +209,3 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
         </div>
     );
 }
-
