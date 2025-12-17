@@ -1,4 +1,3 @@
-```javascript
 import { BarChart, Users, Settings, PieChart } from "lucide-react";
 import Link from "next/link";
 import DashboardCarousel from "@/components/marketing/DashboardCarousel";
@@ -10,7 +9,7 @@ export default function HRDashboardPage() {
             <section className="bg-slate-900 pt-20 pb-0 overflow-hidden">
                 <div className="container mx-auto px-4 text-center">
                     <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-                        Data-Driven Wellness <br/>
+                        Data-Driven Wellness <br />
                         <span className="text-blue-400">For Modern Teams</span>
                     </h1>
                     <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-12">
