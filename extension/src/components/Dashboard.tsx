@@ -21,11 +21,29 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
     const [stats, setStats] = useState({ goal: 8, current: 0, streak: 5 });
     const [userEmail, setUserEmail] = useState('');
 
+    // State for user context
+    const [employeeId, setEmployeeId] = useState<string | null>(null);
+
     useEffect(() => {
-        // 1. Fetch User
-        supabase.auth.getUser().then(({ data }) => {
-            if (data.user) setUserEmail(data.user.email || '');
-        });
+        // 1. Fetch User & Employee ID
+        const initUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                setUserEmail(user.email || '');
+                // Fetch Employee ID
+                const { data: emp } = await supabase
+                    .from('employees')
+                    .select('id')
+                    .eq('auth_user_id', user.id)
+                    .single();
+
+                if (emp) {
+                    setEmployeeId(emp.id);
+                    fetchStats(emp.id);
+                }
+            }
+        };
+        initUser();
 
         const updateStateFromSettings = (settings: any) => {
             if (!settings) return;
@@ -62,6 +80,60 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
             chrome.storage.onChanged.removeListener(storageListener);
         };
     }, []);
+
+    // Fetch Real Stats from Supabase
+    const fetchStats = async (empId: string) => {
+        try {
+            const { data: logs } = await supabase
+                .from('break_logs')
+                .select('completed_at')
+                .eq('employee_id', empId)
+                .order('completed_at', { ascending: false });
+
+            if (!logs) return;
+
+            // 1. Sessions Today
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayCount = logs.filter(l => l.completed_at.startsWith(todayStr)).length;
+
+            // 2. Streak Calculation
+            const dates = new Set(logs.map(l => l.completed_at.split('T')[0]));
+            let streak = 0;
+            let checkDate = new Date(); // Start Today
+
+            // Check Today (if active, count it. if not, check yesterday)
+            // Actually, streak usually means "consecutive days ending today or yesterday"
+            const todayKey = checkDate.toISOString().split('T')[0];
+
+            if (dates.has(todayKey)) {
+                streak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            } else {
+                // If not done today, check yesterday to confirm if streak is alive
+                checkDate.setDate(checkDate.getDate() - 1);
+                if (!dates.has(checkDate.toISOString().split('T')[0])) {
+                    checkDate = null as any;
+                }
+            }
+
+            if (checkDate) {
+                while (true) {
+                    const dStr = checkDate.toISOString().split('T')[0];
+                    if (dates.has(dStr)) {
+                        streak++;
+                        checkDate.setDate(checkDate.getDate() - 1);
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            setStats(prev => ({ ...prev, current: todayCount, streak }));
+
+        } catch (e) {
+            console.error("Failed to fetch stats", e);
+        }
+    };
 
     // 4. Timer Logic (Separate Effect to depend on workStart/End)
     useEffect(() => {

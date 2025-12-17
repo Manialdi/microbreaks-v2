@@ -2,8 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { resend } from '@/lib/email/resend';
-import { getCredentialsEmailTemplate } from '@/lib/email/templates';
-import { generateStrongPassword } from '@/lib/auth/password';
+import { getInviteEmailTemplate } from '@/lib/email/templates';
 
 export async function POST(req: NextRequest) {
     try {
@@ -75,59 +74,31 @@ export async function POST(req: NextRequest) {
             }
 
             try {
-                // Generate secure random password
-                const password = generateStrongPassword();
-                let authUserId: string | undefined;
-
-                // B. Create or Update User with Password
-                const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+                // Generate Invite Link (Magic Link)
+                // This creates (or gets) the user and returns a link to verifying their email/logging in.
+                const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+                    type: 'invite',
                     email: email,
-                    password: password, // Set password immediately
-                    email_confirm: true,
-                    user_metadata: { company_id: companyId }
+                    options: {
+                        // Redirect to callback to exchange code for session, then to password update page
+                        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/update-password`
+                    }
                 });
 
-                if (createError) {
-                    // Check if user already exists
-                    if (createError.message.includes('already been registered') || createError.status === 422) {
-                        console.log(`User ${email} exists. Updating password...`);
-
-                        // Find user
-                        const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
-                        const existingUser = listData?.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
-
-                        if (existingUser) {
-                            authUserId = existingUser.id;
-                            // Update password for existing user
-                            await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
-                                password: password,
-                                user_metadata: { ...existingUser.user_metadata, company_id: companyId }
-                            });
-                        } else {
-                            console.warn(`Could not find ID for existing user ${email}. Skipping.`);
-                            results.push({ email, status: 'error', message: "User exists but could not be updated." });
-                            continue;
-                        }
-
-                    } else {
-                        console.error(`Failed to create user ${email}:`, createError);
-                        results.push({ email, status: 'error', message: createError.message });
-                        continue;
-                    }
-                } else {
-                    authUserId = userData.user?.id;
+                if (linkError) {
+                    results.push({ email, status: 'error', message: linkError.message });
+                    continue;
                 }
 
-                // C. Send Email with Credentials
-                // Link to Extension Store (Placeholder or actual link)
-                // TODO: Replace with actual store link when available
-                const extensionLink = "https://chromewebstore.google.com/detail/placeholder-id";
+                const actionLink = linkData.properties.action_link;
+                const authUserId = linkData.user.id; // User is created if not exists
 
+                // C. Send Invited Email
                 const { error: emailError } = await resend.emails.send({
                     from: 'MicroBreaks <onboarding@micro-breaks.com>',
                     to: email,
-                    subject: 'Welcome to MicroBreaks! (Login Credentials Inside)',
-                    html: getCredentialsEmailTemplate(email, password, extensionLink)
+                    subject: 'You have been invited to MicroBreaks',
+                    html: getInviteEmailTemplate(actionLink)
                 });
 
                 if (emailError) {

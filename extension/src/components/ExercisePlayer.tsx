@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Play, SkipForward, CheckCircle, Clock } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase'; // Use shared client
 import exercisesData from '../exercises.json';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// const supabaseUrl = import.meta.env.VITE_SUPABASE_URL; // Removed
+// const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY; // Removed
+// const supabase = createClient(supabaseUrl, supabaseKey); // Removed
 
 // Define Exercise Type
 type Exercise = {
@@ -26,6 +26,11 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
     const [isActive, setIsActive] = useState(false);
     const [durationDisplay, setDurationDisplay] = useState(5);
     const [employeeId, setEmployeeId] = useState<string | null>(null);
+    const [companyId, setCompanyId] = useState<string | null>(null);
+    const [debugLog, setDebugLog] = useState<string>("Initializing...");
+
+    // Log Accumulator
+    const [accumulatedDuration, setAccumulatedDuration] = useState(0);
 
     const extendTimer = () => {
         setSessionTimeLeft((prev) => prev + 60);
@@ -43,16 +48,36 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
             }
         });
 
-        // Fetch Employee ID for logging
+        // Fetch Employee ID & Company ID for logging
         const fetchEmployee = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data: emp } = await supabase
+            try {
+                const { data: { user }, error: authError } = await supabase.auth.getUser();
+                if (authError) {
+                    setDebugLog(`Auth Error: ${authError.message}`);
+                    return;
+                }
+                if (!user) {
+                    setDebugLog("No User Logged In");
+                    return;
+                }
+
+                const { data: emp, error: empError } = await supabase
                     .from('employees')
-                    .select('id')
+                    .select('id, company_id')
                     .eq('auth_user_id', user.id)
                     .single();
-                if (emp) setEmployeeId(emp.id);
+
+                if (empError) {
+                    setDebugLog(`Emp Fetch Error: ${empError.message}`);
+                } else if (emp) {
+                    setEmployeeId(emp.id);
+                    setCompanyId(emp.company_id);
+                    setDebugLog(`Ready. Emp: ${emp.id.slice(0, 4)}... Co: ${emp.company_id.slice(0, 4)}...`);
+                } else {
+                    setDebugLog("Employee profile not found.");
+                }
+            } catch (err: any) {
+                setDebugLog(`Init Exception: ${err.message}`);
             }
         };
         fetchEmployee();
@@ -96,68 +121,63 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
     }, [isActive, sessionTimeLeft, exercise, employeeId]); // Added deps
 
     const handleExerciseComplete = async () => {
-        // Log the completed exercise
-        if (employeeId && exercise) {
-            // Need company_id to insert. Let's fetch it on the fly if not in state, or better: 
-            // We assume backend might infer? No, schema says not null.
-            // I'll fetch it here quickly or better, store it.
-            // Let's do a best-effort insert with cached data.
-
-            // To properly fix, I will fetch company_id in the mount effect. 
-            // Since I cannot change the mount effect in this chunk easily without conflict, 
-            // I'll use a specific lookup here or assume I added state for it.
-            // Wait, I am replacing the mount effect in the Previous Chunk!
-            // I will add `companyId` state in the previous chunk replacement.
-            // Ah, I missed adding `const [companyId, setCompanyId]...` in the previous chunk.
-
-            // Let's use `supabase` to just call an RPC or insert if we have data. 
-            // I'll modify the "component state" part in a separate chunk to act correctly.
-
-            logSessionInDb();
-        }
+        // Just accumulate time and move to next
+        const duration = exercise?.duration || 60;
+        setAccumulatedDuration(prev => prev + duration);
 
         // If we still have significant time left in the session (e.g. > 10s), load next
         if (sessionTimeLeft > 10) {
             selectRandomExercise();
         } else {
-            // Session Done
+            // Session Done naturally
+            // Updated: Don't auto-close. Wait for user to click "Finish".
             setIsActive(false);
-            setExerciseTimeLeft(0);
+            setSessionTimeLeft(0);
         }
     };
 
+    const finishSession = async () => {
+        setIsActive(false);
+        // Add any partial time logic if needed, but for now we log the accumulated fully completed exercises
+        // OR we can add the sessionTimeLeft diff. 
+        // Simplest: Just log what we accumulated.
+        await logSessionInDb(accumulatedDuration);
+        onComplete();
+    };
+
     // Helper to log
-    const logSessionInDb = async () => {
-        if (!employeeId || !exercise) return;
+    const logSessionInDb = async (totalSeconds: number) => {
+        if (totalSeconds <= 0) return; // Don't log empty sessions if they just opened and closed immediately? 
+        // Or maybe log them as 0 duration? Let's log active work only.
+
+        setDebugLog("Finalizing Session...");
+        if (!employeeId || !companyId) {
+            setDebugLog(`Missing Data. Emp:${!!employeeId}, Co:${!!companyId}, Ex:${!!exercise}`);
+            console.error("Missing data for log:", { employeeId, companyId, exercise });
+            return;
+        }
 
         try {
-            // Fetch company_id if needed (we should store this in state preferably)
-            // But to avoid complex refactor, I'll fetch profile again or from local storage?
-            // Chrome storage settings might have it? No.
+            const { error } = await supabase.from('break_logs').insert({
+                employee_id: employeeId,
+                company_id: companyId,
+                // exercise_id removed to avoid PGRST204 if column is missing
+                duration_seconds: totalSeconds,
+                completed_at: new Date().toISOString()
+            });
 
-            // Quick fetch profile to get company_id
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-            const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', user.id).single();
-            if (profile?.company_id) {
-                await supabase.from('break_logs').insert({
-                    employee_id: employeeId,
-                    company_id: profile.company_id,
-                    exercise_id: null, // We don't have UUIDs for exercises in JSON yet... schema expects UUID.
-                    // IMPORTANT: Schema `exercise_id` is UUID references exercises(id).
-                    // Our `exercises.json` uses integer IDs.
-                    // We cannot insert `exercise_id` unless we sync these.
-                    // Workaround: Send `null` for exercise_id but log name in description? 
-                    // Or just log duration. 
-                    // The schema has `exercise_id` but it is nullable?
-                    // `exercise_id uuid references exercises(id)` -> nullable by default.
-                    // We will log duration.
-                    duration_seconds: exercise.duration || 60,
-                    completed_at: new Date().toISOString()
-                });
+            if (error) {
+                setDebugLog(`Insert Error: ${error.message} (${error.code})`);
+                console.error("Supabase Insert Error:", error);
             }
-        } catch (e) {
-            console.error("Log failed", e);
+            else {
+                setDebugLog("Success! Log inserted.");
+                console.log("Break Logged Successfully");
+            }
+
+        } catch (e: any) {
+            setDebugLog(`Insert Exception: ${e.message}`);
+            console.error("Log failed exception", e);
         }
     };
 
@@ -266,7 +286,7 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
 
                     {/* Action Buttons Row 2: Done/Finish */}
                     <button
-                        onClick={onComplete}
+                        onClick={finishSession}
                         className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 transform whitespace-nowrap ${sessionTimeLeft <= 0
                             ? 'bg-emerald-600 hover:bg-emerald-700 text-white animate-pulse'
                             : 'bg-slate-800 hover:bg-slate-700 text-white/90'
@@ -275,14 +295,26 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
                         <CheckCircle size={20} />
                         {sessionTimeLeft <= 0 ? 'Finish Break' : 'I am Done Early'}
                     </button>
-
-                    <button
-                        onClick={onComplete}
-                        className="text-slate-400 text-[10px] text-center hover:text-slate-600 underline mt-1"
-                    >
-                        Quit to Dashboard
-                    </button>
                 </div>
+            </div>
+            {/* Footer */}
+            <div className="flex justify-between items-center w-full px-4 mb-4">
+                <button
+                    onClick={finishSession}
+                    className="text-gray-400 hover:text-white text-xs flex items-center gap-1 transition-colors"
+                >
+                    Quit to Dashboard
+                </button>
+            </div>
+
+            {/* Debug Info */}
+            <div className="w-full px-4 pb-2">
+                <details className="text-[10px] text-gray-500 cursor-pointer">
+                    <summary>Debug Info</summary>
+                    <pre className="mt-1 whitespace-pre-wrap bg-gray-900/50 p-2 rounded border border-gray-700">
+                        {debugLog}
+                    </pre>
+                </details>
             </div>
         </div>
     );

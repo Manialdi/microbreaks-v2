@@ -100,21 +100,23 @@ export default function EmployeesPage() {
 
                 // C. Fetch Sessions for aggregation (Optimization: only needed columns)
                 // In production, use RPC. For now, aggregate client side.
-                const { data: sessions } = await supabase
-                    .from('sessions')
-                    .select('employee_id, started_at')
+                const { data: logs } = await supabase
+                    .from('break_logs')
+                    .select('employee_id, completed_at')
                     .eq('company_id', cId);
 
-                const sessionList = sessions || [];
+                const logList = logs || [];
                 const today = new Date().toISOString().split('T')[0];
                 const sevenDaysAgo = new Date();
                 sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
                 // Process Employees
                 const processed = emps.map(emp => {
-                    const mySessions = sessionList.filter(s => s.employee_id === emp.id);
-                    const todayCount = mySessions.filter(s => s.started_at.startsWith(today)).length;
-                    const weekCount = mySessions.filter(s => new Date(s.started_at) >= sevenDaysAgo).length;
+                    const myLogs = logList.filter(s => s.employee_id === emp.id);
+                    // Use Set to count daily engagement if needed, but here simple count is requested?
+                    // User asked for "Sessions", so count of logs is correct.
+                    const todayCount = myLogs.filter(s => s.completed_at.startsWith(today)).length;
+                    const weekCount = myLogs.filter(s => new Date(s.completed_at) >= sevenDaysAgo).length;
 
                     // Keep mock for visualizations
                     const trend = [0, 0, 0, 0, 0, 0, 0].map(() => Math.floor(Math.random() * 5));
@@ -127,7 +129,7 @@ export default function EmployeesPage() {
                         status: emp.status || 'invited',
                         sessionsToday: todayCount,
                         sessionsThisWeek: weekCount,
-                        totalSessions: mySessions.length,
+                        totalSessions: myLogs.length,
                         lastActive: emp.last_active_at || null,
                         createdAt: emp.created_at || new Date().toISOString(),
                         streakDays: emp.status === 'active' ? Math.floor(Math.random() * 10) : 0,
