@@ -43,7 +43,20 @@ function App() {
     return <ExerciseView onComplete={() => setView('dashboard')} session={session} />;
   }
 
-  return <Dashboard onStartBreak={() => setView('exercise')} />;
+  const handleStartBreak = async () => {
+    // 1. Set State for Side Panel
+    await chrome.storage.local.set({ isBreakActive: true });
+
+    // 2. Open Side Panel (Requires User Gesture - Click propagates here)
+    const windowId = (await chrome.windows.getCurrent()).id;
+    if (windowId) {
+      // We can call sidePanel.open directly from popup click
+      chrome.sidePanel.open({ windowId });
+      window.close(); // Close the popup
+    }
+  };
+
+  return <Dashboard onStartBreak={handleStartBreak} />;
 }
 
 export default App;

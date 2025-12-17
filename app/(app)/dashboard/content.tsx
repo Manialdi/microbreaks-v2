@@ -69,16 +69,28 @@ export default function DashboardPage() {
 
                 if (empError || !empData) throw empError;
 
-                // 3. Fetch Sessions (Last 7 Days for performance/engagement stats)
-                // Note: In a real large-scale app, this should be an aggregate view or RPC.
-                const { data: sessionData, error: sessionError } = await supabase
-                    .from('sessions')
-                    .select('id, employee_id, started_at')
+                // 3. Fetch Break Logs (Last 7 Days)
+                // Note: Replaced 'sessions' with 'break_logs'
+                const { data: logData, error: logError } = await supabase
+                    .from('break_logs')
+                    .select('id, employee_id, completed_at, duration_seconds')
                     .eq('company_id', companyId)
-                    .gte('started_at', sevenDaysAgoStr); // Optimization: only fetch recent
+                    .gte('completed_at', sevenDaysAgoStr); // Optimization: only fetch recent for stats
 
-                if (sessionError) console.error("Error fetching sessions", sessionError);
-                const sessions = sessionData || [];
+                if (logError) console.error("Error fetching logs", logError);
+                const logs = logData || [];
+
+                // Fetch ALL Logs for Streak Calculation (Historical)
+                // For accurate streak, we need more than 7 days. Ideally, backend computes this.
+                // For MVP: Fetch last 30 days for streak calculation usage
+                const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+                const { data: streakLogsData } = await supabase
+                    .from('break_logs')
+                    .select('employee_id, completed_at')
+                    .eq('company_id', companyId)
+                    .gte('completed_at', thirtyDaysAgoStr);
+
+                const allRecentLogs = streakLogsData || [];
 
                 // --- Calculate KPI Stats ---
 
@@ -87,7 +99,7 @@ export default function DashboardPage() {
 
                 // filtering sessions for today (local time approximation or UTC depending on DB)
                 // Assuming DB is ISO UTC, we'll check matching date prefix for simplicity or JS date parsing
-                const sessionsTodayList = sessions.filter(s => s.started_at.startsWith(today));
+                const sessionsTodayList = logs.filter(s => s.completed_at.startsWith(today));
                 const sessionsTodayCount = sessionsTodayList.length;
 
                 // Daily Engagement: Unique active employees over active employees count
@@ -106,15 +118,39 @@ export default function DashboardPage() {
                 // --- Process Employee Table Data ---
 
                 const processedEmployees: EmployeeStats[] = empData.map(emp => {
-                    const empSessions = sessions.filter(s => s.employee_id === emp.id);
-                    const todayCount = empSessions.filter(s => s.started_at.startsWith(today)).length;
+                    const empLogs = logs.filter(l => l.employee_id === emp.id);
+                    const todayCount = empLogs.filter(l => l.completed_at.startsWith(today)).length;
+                    const last7SaysCount = empLogs.length;
 
-                    // Simple counting for last 7 days
-                    const last7SaysCount = empSessions.length;
+                    // Calculate Streak (Active Days in a row ending today/yesterday)
+                    const empAllLogs = allRecentLogs.filter(l => l.employee_id === emp.id);
+                    const activeDates = new Set(empAllLogs.map(l => l.completed_at.split('T')[0]));
 
-                    // Mocking Streak for now as it requires complex consecutive day calculation
-                    // In production, this would be a column 'current_streak' on the employee table updated by a cron job/trigger
-                    const mockStreak = emp.status === 'active' ? Math.floor(Math.random() * 10) : 0;
+                    let streak = 0;
+                    let checkDate = new Date(); // Start Today
+
+                    // Check Today
+                    if (activeDates.has(checkDate.toISOString().split('T')[0])) {
+                        streak++;
+                        checkDate.setDate(checkDate.getDate() - 1);
+                    } else {
+                        // If not active today, check yesterday to start streak
+                        checkDate.setDate(checkDate.getDate() - 1);
+                        if (!activeDates.has(checkDate.toISOString().split('T')[0])) {
+                            checkDate = null as any; // No streak
+                        }
+                    }
+
+                    if (checkDate) {
+                        while (true) {
+                            if (activeDates.has(checkDate.toISOString().split('T')[0])) {
+                                streak++;
+                                checkDate.setDate(checkDate.getDate() - 1);
+                            } else {
+                                break;
+                            }
+                        }
+                    }
 
                     return {
                         id: emp.id,
@@ -123,7 +159,7 @@ export default function DashboardPage() {
                         status: emp.status || 'invited', // Default to invited
                         sessionsToday: todayCount,
                         sessionsLast7Days: last7SaysCount,
-                        streakDays: mockStreak
+                        streakDays: streak
                     };
                 });
 
@@ -270,8 +306,8 @@ export default function DashboardPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${employee.status === "active" ? "bg-green-100 text-green-800" :
-                                                    employee.status === "invited" ? "bg-blue-100 text-blue-800" :
-                                                        "bg-gray-100 text-gray-800"
+                                                employee.status === "invited" ? "bg-blue-100 text-blue-800" :
+                                                    "bg-gray-100 text-gray-800"
                                                 }`}>
                                                 {employee.status}
                                             </span>

@@ -77,17 +77,21 @@ export default function AnalyticsPage() {
                 const [empRes, sessRes] = await Promise.all([
                     supabase.from('employees').select('id, name, email').eq('company_id', companyId),
                     supabase
-                        .from('sessions')
-                        .select('id, employee_id, started_at') // Add category if exists, assuming not based on known schema
+                        .from('break_logs')
+                        .select('id, employee_id, completed_at, duration_seconds')
                         .eq('company_id', companyId)
-                        .gte('started_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Last 30 days
+                        .gte('completed_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Last 30 days
                 ]);
 
                 if (empRes.error) throw empRes.error;
                 if (sessRes.error) throw sessRes.error;
 
                 setEmployees(empRes.data || []);
-                setSessions(sessRes.data || []);
+                // Map break_logs to 'sessions' structure (aligning completed_at to key property for stats)
+                setSessions(sessRes.data?.map(log => ({
+                    ...log,
+                    started_at: log.completed_at // Use completed time as 'started' for analytics aggregation
+                })) || []);
 
             } catch (err) {
                 console.error("Analytics load failed", err);
@@ -398,10 +402,10 @@ export default function AnalyticsPage() {
                                             <div key={`${i}-${j}`} className="flex-1 px-0.5 aspect-[4/1] md:aspect-[8/1] relative group cursor-default">
                                                 <div
                                                     className={`w-full h-full rounded-sm transition-colors ${val === 0 ? 'bg-gray-50' :
-                                                            val > 10 ? 'bg-blue-800' :
-                                                                val > 5 ? 'bg-blue-600' :
-                                                                    val > 2 ? 'bg-blue-400' :
-                                                                        'bg-blue-200'
+                                                        val > 10 ? 'bg-blue-800' :
+                                                            val > 5 ? 'bg-blue-600' :
+                                                                val > 2 ? 'bg-blue-400' :
+                                                                    'bg-blue-200'
                                                         }`}
                                                 ></div>
                                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-gray-900 text-white text-xs rounded px-2 py-1 z-10 whitespace-nowrap shadow-lg">

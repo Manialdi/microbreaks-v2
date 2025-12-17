@@ -176,6 +176,18 @@ chrome.runtime.onInstalled.addListener(() => {
     console.log("MicroBreaks Extension Installed");
     chrome.alarms.clearAll();
     syncCompanySettings();
+
+    // Debugging: Test Notification for Side Panel
+    setTimeout(() => {
+        chrome.notifications.create({
+            type: 'basic',
+            iconUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+            title: 'Side Panel Test 🧪',
+            message: 'Click this notification to open the Side Panel!',
+            priority: 2,
+            requireInteraction: true
+        });
+    }, 3000);
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -202,17 +214,57 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     }
 });
 
+let lastWindowId: number | undefined;
+
+// Track the last focused window
+chrome.windows.onFocusChanged.addListener((windowId) => {
+    if (windowId !== chrome.windows.WINDOW_ID_NONE) {
+        lastWindowId = windowId;
+    }
+});
+
+// Initialize logic to capture current window if SW just started
+chrome.windows.getLastFocused({ windowTypes: ['normal'] }).then(win => {
+    if (win?.id) lastWindowId = win.id;
+});
+
+// Helper to open side panel
+// Tries to perform the action synchronously if possible to preserve user gesture
+function openSidePanel() {
+    if (lastWindowId) {
+        console.log(`Attempting Synchronous Open in window ${lastWindowId}`);
+        // Bring window to front (Fire and forget, doesn't block sidePanel.open)
+        chrome.windows.update(lastWindowId, { focused: true }).catch(err => console.error("Focus failed", err));
+
+        // This is synchronous invocation (fire and forget promise)
+        chrome.sidePanel.open({ windowId: lastWindowId }).catch(err => {
+            console.error("Sync open failed, falling back:", err);
+            openSidePanelFallback();
+        });
+    } else {
+        openSidePanelFallback();
+    }
+}
+
+async function openSidePanelFallback() {
+    console.log("Attempting Async Fallback (Launcher)...");
+    // Since we lost the user gesture context for sidePanel.open, we open a launcher tab.
+    // chrome.tabs.create usually works even with loose gesture rules or it acts as a popup.
+    chrome.tabs.create({ url: 'launcher.html' });
+}
+
+chrome.notifications.onClicked.addListener(() => {
+    console.log("Notification Clicked!");
+    chrome.storage.local.set({ isBreakActive: true });
+    openSidePanel();
+});
+
 chrome.notifications.onButtonClicked.addListener((_notificationId: string, buttonIndex: number) => {
     if (buttonIndex === 0) {
-        // "Start Exercise" clicked
-        chrome.windows.create({
-            url: 'index.html',
-            type: 'popup',
-            width: 400,
-            height: 600
-        });
+        console.log("Button Clicked!");
+        chrome.storage.local.set({ isBreakActive: true });
+        openSidePanel();
     } else if (buttonIndex === 1) {
-        // "Snooze 5m" clicked
         chrome.alarms.create(ALARM_NAME, { delayInMinutes: 5 });
     }
 });
