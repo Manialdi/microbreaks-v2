@@ -103,7 +103,7 @@ export default function HowItWorksPage() {
                                     </li>
                                     <li className="flex items-center gap-3 text-slate-700">
                                         <CheckCircle className="w-5 h-5 text-green-500" />
-                                        Guided HD videos
+                                        Guided stretches
                                     </li>
                                 </ul>
                             </div>

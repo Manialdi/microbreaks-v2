@@ -12,8 +12,15 @@ export default function ExtensionPage() {
                 <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-12">
                     The MicroBreaks extension lives in your Chrome side panel, providing non-intrusive reminders and exercises without you ever leaving your tab.
                 </p>
-                <div className="relative w-full max-w-4xl mx-auto aspect-[16/9] bg-slate-100 rounded-2xl border border-gray-200 shadow-2xl overflow-hidden flex items-center justify-center">
-                    <span className="text-slate-400">Extension UI Screenshot Placeholder</span>
+                <div className="relative w-full max-w-4xl mx-auto bg-slate-100 rounded-2xl border border-gray-200 shadow-2xl overflow-hidden flex items-center justify-center p-8 md:p-12">
+                    <div className="relative w-full h-[500px] md:h-[600px]">
+                        <Image
+                            src="/sidepanel-ui.png"
+                            alt="MicroBreaks Chrome Extension Side Panel Interface"
+                            fill
+                            className="object-contain drop-shadow-2xl"
+                        />
+                    </div>
                 </div>
             </section>
 
