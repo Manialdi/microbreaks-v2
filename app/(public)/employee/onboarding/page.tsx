@@ -15,14 +15,48 @@ export default function EmployeeOnboardingPage() {
     const [user, setUser] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
 
-    // Auto-fix for PKCE flow
     useEffect(() => {
+        // 1. Handle PKCE Code (Server-side exchange)
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             const code = params.get('code');
+            const errorParam = params.get('error');
+            const errDesc = params.get('error_description');
+
+            if (errorParam === 'access_denied' && errorParam) {
+                setError(errDesc ? decodeURIComponent(errDesc.replace(/\+/g, ' ')) : "Invite link is invalid or expired.");
+                setLoading(false);
+                return;
+            }
+
             if (code) {
-                // If we have a code, redirect to callback to exchange it
-                window.location.href = `/auth/callback?next=/employee/onboarding&code=${code}`;
+                // Determine origin to support both localhost and prod
+                const origin = window.location.origin;
+                window.location.href = `${origin}/auth/callback?next=/employee/onboarding&code=${code}`;
+                return;
+            }
+
+            // 2. Handle Implicit Hash (Client-side set) - Manual Fallback
+            const hash = window.location.hash;
+            if (hash && hash.includes('access_token')) {
+                // Parse hash manually
+                const hashParams = new URLSearchParams(hash.substring(1)); // remove #
+                const accessToken = hashParams.get('access_token');
+                const refreshToken = hashParams.get('refresh_token');
+
+                if (accessToken) {
+                    supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken || ''
+                    }).then(({ data, error }) => {
+                        if (data.session) {
+                            setUser(data.session.user);
+                            setLoading(false);
+                        } else if (error) {
+                            console.error("Manual session set failed", error);
+                        }
+                    });
+                }
             }
         }
     }, []);

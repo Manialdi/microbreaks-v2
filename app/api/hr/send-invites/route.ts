@@ -80,8 +80,8 @@ export async function POST(req: NextRequest) {
                     type: 'invite',
                     email: email,
                     options: {
-                        // Redirect to callback to exchange code for session, then to password update page
-                        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/update-password`
+                        // Redirect to the known working onboarding page
+                        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/employee/onboarding`
                     }
                 });
 
