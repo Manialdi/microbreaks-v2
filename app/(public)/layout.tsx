@@ -34,9 +34,7 @@ export default function MarketingLayout({
                         {/* Solutions */}
                         <div className="flex flex-col space-y-4">
                             <h4 className="font-semibold text-slate-900">Solutions</h4>
-                            <Link href="/solutions/hr-teams" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">For HR Teams</Link>
-                            <Link href="/solutions/employees" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">For Employees</Link>
-                            <Link href="/solutions/people-leaders" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">For Managers</Link>
+                            <Link href="/solutions" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">All Solutions</Link>
                         </div>
 
                         {/* Company */}
