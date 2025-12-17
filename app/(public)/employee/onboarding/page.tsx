@@ -15,6 +15,18 @@ export default function EmployeeOnboardingPage() {
     const [user, setUser] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // Auto-fix for PKCE flow
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            if (code) {
+                // If we have a code, redirect to callback to exchange it
+                window.location.href = `/auth/callback?next=/employee/onboarding&code=${code}`;
+            }
+        }
+    }, []);
+
     // Track auth state across async closures to prevent race conditions
     const isVerifiedRef = useRef(false);
 
