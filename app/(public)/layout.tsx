@@ -25,38 +25,37 @@ export default function MarketingLayout({
                         {/* Product */}
                         <div className="flex flex-col space-y-4">
                             <h4 className="font-semibold text-slate-900">Product</h4>
-                            <Link href="#" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Overview</Link>
-                            <Link href="#" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Reminders</Link>
-                            <Link href="#" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Exercise Library</Link>
-                            <Link href="#" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">HR Dashboard</Link>
+                            <Link href="/product/how-it-works" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Overview</Link>
+                            <Link href="/product/extension" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Chrome Extension</Link>
+                            <Link href="/product/exercises" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Exercise Library</Link>
+                            <Link href="/product/hr-dashboard" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">HR Dashboard</Link>
                         </div>
 
                         {/* Solutions */}
                         <div className="flex flex-col space-y-4">
                             <h4 className="font-semibold text-slate-900">Solutions</h4>
-                            <Link href="#" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">For HR Teams</Link>
-                            <Link href="#" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">For Employees</Link>
-                            <Link href="#" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">For Managers</Link>
+                            <Link href="/solutions/hr-teams" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">For HR Teams</Link>
+                            <Link href="/solutions/employees" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">For Employees</Link>
+                            <Link href="/solutions/people-leaders" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">For Managers</Link>
                         </div>
 
                         {/* Company */}
                         <div className="flex flex-col space-y-4">
                             <h4 className="font-semibold text-slate-900">Company</h4>
-                            <Link href="#" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">About</Link>
-                            <Link href="#" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Contact</Link>
+                            <Link href="/contact" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Contact</Link>
                         </div>
 
                         {/* Resources */}
                         <div className="flex flex-col space-y-4">
                             <h4 className="font-semibold text-slate-900">Resources</h4>
-                            <Link href="#" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Blog</Link>
-                            <Link href="#" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Science Behind Microbreaks</Link>
+                            <Link href="/resources/blog" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Blog</Link>
+                            <Link href="/resources/science" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Science Behind Microbreaks</Link>
                         </div>
 
                         {/* Legal */}
                         <div className="flex flex-col space-y-4">
                             <h4 className="font-semibold text-slate-900">Legal</h4>
-                            <Link href="#" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Privacy</Link>
+                            <Link href="/privacy" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Privacy</Link>
                             <Link href="#" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Terms</Link>
                         </div>
                     </div>
