@@ -50,20 +50,7 @@ export function MarketingHeader() {
                         Pricing
                     </Link>
 
-                    {/* Resources Dropdown */}
-                    <div className="relative group">
-                        <button className="flex items-center space-x-2 text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors py-4">
-                            <span>Resources</span>
-                            <ChevronDown size={20} className="group-hover:rotate-180 transition-transform duration-200" />
-                        </button>
-                        <div className="absolute top-full left-0 w-64 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
-                            <div className="bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden py-2">
-                                <Link href="/resources/blog" className="block px-6 py-4 text-base text-slate-600 hover:text-blue-600 hover:bg-slate-50">Blog</Link>
-                                <Link href="/resources/science" className="block px-6 py-4 text-base text-slate-600 hover:text-blue-600 hover:bg-slate-50">Science Behind Microbreaks</Link>
-                                <Link href="/resources/guides" className="block px-6 py-4 text-base text-slate-600 hover:text-blue-600 hover:bg-slate-50">Wellness Guides</Link>
-                            </div>
-                        </div>
-                    </div>
+
                 </nav>
 
                 {/* Right: Auth Links */}

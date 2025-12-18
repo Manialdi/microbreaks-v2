@@ -43,12 +43,7 @@ export default function MarketingLayout({
                             <Link href="/contact" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Contact</Link>
                         </div>
 
-                        {/* Resources */}
-                        <div className="flex flex-col space-y-4">
-                            <h4 className="font-semibold text-slate-900">Resources</h4>
-                            <Link href="/resources/blog" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Blog</Link>
-                            <Link href="/resources/science" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Science Behind Microbreaks</Link>
-                        </div>
+
 
                         {/* Legal */}
                         <div className="flex flex-col space-y-4">
