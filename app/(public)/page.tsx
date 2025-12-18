@@ -297,79 +297,7 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Pricing Teaser Section */}
-            <section className="bg-white py-24 lg:py-32">
-                <div className="container mx-auto px-4">
-                    <div className="max-w-3xl mx-auto text-center mb-16">
-                        <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-6 tracking-tight">
-                            Start small. Grow as your team does.
-                        </h2>
-                        <p className="text-lg text-slate-600 leading-relaxed">
-                            Micro Breaks is designed to be easy to try, simple to roll out, and affordable to scale.
-                        </p>
-                    </div>
 
-                    <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                        {/* Free Card */}
-                        <div className="p-8 rounded-2xl border border-slate-200 bg-white hover:border-blue-200 hover:shadow-lg transition-all relative">
-                            <h3 className="text-2xl font-bold text-slate-900 mb-2">Free</h3>
-                            <p className="text-slate-500 mb-8">Perfect for small teams and pilots</p>
-
-                            <ul className="space-y-4 mb-8">
-                                <li className="flex items-center gap-3 text-slate-700">
-                                    <Check size={18} className="text-blue-600" />
-                                    <span>Up to 10 employees</span>
-                                </li>
-                                <li className="flex items-center gap-3 text-slate-700">
-                                    <Check size={18} className="text-blue-600" />
-                                    <span>Core reminders</span>
-                                </li>
-                                <li className="flex items-center gap-3 text-slate-700">
-                                    <Check size={18} className="text-blue-600" />
-                                    <span>Starter exercise library</span>
-                                </li>
-                                <li className="flex items-center gap-3 text-slate-700">
-                                    <Check size={18} className="text-blue-600" />
-                                    <span>Basic usage insights</span>
-                                </li>
-                            </ul>
-
-                            <Link href="/login" className="block w-full text-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-                                Start Free
-                            </Link>
-                        </div>
-
-                        {/* Pro Card */}
-                        <div className="p-8 rounded-2xl border border-slate-200 bg-slate-50/50 hover:border-slate-300 hover:shadow-lg transition-all relative">
-                            <h3 className="text-2xl font-bold text-slate-900 mb-2">Pro</h3>
-                            <p className="text-slate-500 mb-8">For growing teams and companies</p>
-
-                            <ul className="space-y-4 mb-8">
-                                <li className="flex items-center gap-3 text-slate-700">
-                                    <Check size={18} className="text-slate-900" />
-                                    <span>Unlimited employees</span>
-                                </li>
-                                <li className="flex items-center gap-3 text-slate-700">
-                                    <Check size={18} className="text-slate-900" />
-                                    <span>Full exercise library</span>
-                                </li>
-                                <li className="flex items-center gap-3 text-slate-700">
-                                    <Check size={18} className="text-slate-900" />
-                                    <span>Advanced HR analytics</span>
-                                </li>
-                                <li className="flex items-center gap-3 text-slate-700">
-                                    <Check size={18} className="text-slate-900" />
-                                    <span>Priority support</span>
-                                </li>
-                            </ul>
-
-                            <Link href="mailto:sales@micro-breaks.com" className="block w-full text-center px-6 py-3 bg-white text-slate-900 border border-slate-300 rounded-lg font-semibold hover:bg-slate-50 transition-colors">
-                                Talk to us
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
             {/* FAQ Section */}
             <FaqSection />
