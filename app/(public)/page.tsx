@@ -27,11 +27,11 @@ export default function LandingPage() {
         <div className="bg-gradient-to-b from-blue-50/50 to-white">
             {/* Hero Section */}
             <section className="container mx-auto px-4 py-20 lg:py-32">
-                <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+                <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
                     {/* Left Column: Text Content */}
-                    <div className="flex flex-col space-y-8 max-w-2xl text-left">
+                    <div className="lg:col-span-7 flex flex-col space-y-8 max-w-2xl text-left">
                         <div className="space-y-4">
-                            <h1 className="text-4xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
+                            <h1 className="text-4xl lg:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
                                 Micro-breaks your team will actually <span className="text-blue-600">use</span>
                             </h1>
                             <p className="text-lg lg:text-xl text-slate-600 leading-relaxed max-w-lg">
@@ -80,13 +80,13 @@ export default function LandingPage() {
                     </div>
 
                     {/* Right Column: Hero Image */}
-                    <div className="relative lg:h-[600px] w-full flex items-center justify-center">
-                        <div className="relative w-full aspect-square lg:aspect-auto h-full rounded-2xl overflow-hidden shadow-2xl border border-slate-100 bg-white">
+                    <div className="lg:col-span-5 relative lg:h-[600px] w-full flex items-center justify-center">
+                        <div className="relative w-full aspect-square lg:aspect-auto h-full rounded-2xl overflow-hidden shadow-2xl border border-slate-100 bg-white flex items-center justify-center bg-slate-50">
                             <Image
-                                src="/hero-dashboard.png"
-                                alt="Micro Breaks Dashboard Interface"
+                                src="/images/extension-preview-new.png"
+                                alt="Micro Breaks Extension Interface"
                                 fill
-                                className="object-cover object-left-top"
+                                className="object-contain"
                                 priority
                             />
                         </div>
