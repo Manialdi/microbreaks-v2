@@ -29,86 +29,92 @@ export default function HowItWorksPage() {
             {/* Steps Section */}
             <section className="py-24">
                 <div className="container mx-auto px-4">
-                    <div className="max-w-4xl mx-auto space-y-24">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
                         {/* Step 1 */}
-                        <div className="flex flex-col md:flex-row items-center gap-12">
-                            <div className="flex-1 space-y-6">
-                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-full font-medium text-sm">
-                                    <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">1</span>
+                        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                            <div className="flex justify-center mb-8">
+                                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <Mail className="w-10 h-10 text-blue-600" />
+                                </div>
+                            </div>
+                            <div className="text-center">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full font-medium text-xs mb-4">
+                                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">1</span>
                                     Step One
                                 </div>
-                                <h2 className="text-3xl font-bold text-slate-900">Invite Your Team</h2>
-                                <p className="text-lg text-slate-600 leading-relaxed">
+                                <h2 className="text-2xl font-bold text-slate-900 mb-4">Invite Your Team</h2>
+                                <p className="text-slate-600 leading-relaxed mb-6">
                                     HR admins invite employees via email from the dashboard. Employees receive a secure link to set their password.
                                 </p>
-                                <ul className="space-y-3">
-                                    <li className="flex items-center gap-3 text-slate-700">
-                                        <CheckCircle className="w-5 h-5 text-green-500" />
-                                        Bulk invite support
+                                <ul className="space-y-2 text-left bg-slate-50 p-4 rounded-xl">
+                                    <li className="flex items-center gap-2 text-slate-700 text-sm">
+                                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                                        <span>Bulk invite support</span>
                                     </li>
-                                    <li className="flex items-center gap-3 text-slate-700">
-                                        <CheckCircle className="w-5 h-5 text-green-500" />
-                                        Secure password setup
+                                    <li className="flex items-center gap-2 text-slate-700 text-sm">
+                                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                                        <span>Secure password setup</span>
                                     </li>
                                 </ul>
-                            </div>
-                            <div className="flex-1 bg-slate-100 p-8 rounded-2xl border border-slate-200 aspect-video flex items-center justify-center">
-                                <Mail className="w-24 h-24 text-blue-200" />
                             </div>
                         </div>
 
                         {/* Step 2 */}
-                        <div className="flex flex-col md:flex-row-reverse items-center gap-12">
-                            <div className="flex-1 space-y-6">
-                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 rounded-full font-medium text-sm">
-                                    <span className="w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-bold">2</span>
+                        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                            <div className="flex justify-center mb-8">
+                                <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center">
+                                    <Download className="w-10 h-10 text-purple-600" />
+                                </div>
+                            </div>
+                            <div className="text-center">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-50 text-purple-700 rounded-full font-medium text-xs mb-4">
+                                    <span className="w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[10px] font-bold">2</span>
                                     Step Two
                                 </div>
-                                <h2 className="text-3xl font-bold text-slate-900">Install Extension</h2>
-                                <p className="text-lg text-slate-600 leading-relaxed">
-                                    Employees install the MicroBreaks Chrome Extension and log in. It sits quietly in the browser, respecting privacy while waiting for the next scheduled break.
+                                <h2 className="text-2xl font-bold text-slate-900 mb-4">Install Extension</h2>
+                                <p className="text-slate-600 leading-relaxed mb-6">
+                                    Employees install the extension and log in. It sits quietly in the browser, respecting privacy.
                                 </p>
-                                <ul className="space-y-3">
-                                    <li className="flex items-center gap-3 text-slate-700">
-                                        <CheckCircle className="w-5 h-5 text-green-500" />
-                                        One-click installation
+                                <ul className="space-y-2 text-left bg-slate-50 p-4 rounded-xl">
+                                    <li className="flex items-center gap-2 text-slate-700 text-sm">
+                                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                                        <span>One-click installation</span>
                                     </li>
-                                    <li className="flex items-center gap-3 text-slate-700">
-                                        <CheckCircle className="w-5 h-5 text-green-500" />
-                                        Privacy-first (no browsing history tracking)
+                                    <li className="flex items-center gap-2 text-slate-700 text-sm">
+                                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                                        <span>Privacy-first design</span>
                                     </li>
                                 </ul>
-                            </div>
-                            <div className="flex-1 bg-slate-100 p-8 rounded-2xl border border-slate-200 aspect-video flex items-center justify-center">
-                                <Download className="w-24 h-24 text-purple-200" />
                             </div>
                         </div>
 
                         {/* Step 3 */}
-                        <div className="flex flex-col md:flex-row items-center gap-12">
-                            <div className="flex-1 space-y-6">
-                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-700 rounded-full font-medium text-sm">
-                                    <span className="w-6 h-6 rounded-full bg-orange-600 text-white flex items-center justify-center text-xs font-bold">3</span>
+                        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                            <div className="flex justify-center mb-8">
+                                <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center">
+                                    <Activity className="w-10 h-10 text-orange-600" />
+                                </div>
+                            </div>
+                            <div className="text-center">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-50 text-orange-700 rounded-full font-medium text-xs mb-4">
+                                    <span className="w-5 h-5 rounded-full bg-orange-600 text-white flex items-center justify-center text-[10px] font-bold">3</span>
                                     Step Three
                                 </div>
-                                <h2 className="text-3xl font-bold text-slate-900">Active Breaks</h2>
-                                <p className="text-lg text-slate-600 leading-relaxed">
-                                    Every 2 hours (customizable), a gentle notification appears. The side panel opens with a guided 2-minute stretching routine.
+                                <h2 className="text-2xl font-bold text-slate-900 mb-4">Active Breaks</h2>
+                                <p className="text-slate-600 leading-relaxed mb-6">
+                                    Every 2 hours, a gentle notification appears. The side panel opens with a guided 2-minute routine.
                                 </p>
-                                <ul className="space-y-3">
-                                    <li className="flex items-center gap-3 text-slate-700">
-                                        <CheckCircle className="w-5 h-5 text-green-500" />
-                                        Smart notifications
+                                <ul className="space-y-2 text-left bg-slate-50 p-4 rounded-xl">
+                                    <li className="flex items-center gap-2 text-slate-700 text-sm">
+                                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                                        <span>Smart notifications</span>
                                     </li>
-                                    <li className="flex items-center gap-3 text-slate-700">
-                                        <CheckCircle className="w-5 h-5 text-green-500" />
-                                        Guided stretches
+                                    <li className="flex items-center gap-2 text-slate-700 text-sm">
+                                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                                        <span>Guided stretches</span>
                                     </li>
                                 </ul>
-                            </div>
-                            <div className="flex-1 bg-slate-100 p-8 rounded-2xl border border-slate-200 aspect-video flex items-center justify-center">
-                                <Activity className="w-24 h-24 text-orange-200" />
                             </div>
                         </div>
 

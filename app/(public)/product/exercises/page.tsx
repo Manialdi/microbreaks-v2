@@ -16,46 +16,52 @@ export default function ExercisesPage() {
             <section className="py-12 container mx-auto px-4">
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
 
-                    {/* Category: Eyes */}
+                    {/* Exercise 1: Chin Tucks */}
                     <div className="group cursor-pointer">
-                        <div className="relative aspect-video bg-blue-100 rounded-2xl overflow-hidden mb-4 border border-blue-200 group-hover:shadow-lg transition-all">
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <Eye className="w-16 h-16 text-blue-400 opacity-50" />
-                            </div>
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                <PlayCircle className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity transform scale-90 group-hover:scale-100" />
-                            </div>
+                        <div className="relative aspect-video bg-white rounded-2xl overflow-hidden mb-4 border border-slate-200 group-hover:shadow-lg transition-all flex items-center justify-center">
+                            <video
+                                src="/videos/chin-tucks.mp4"
+                                className="w-full h-full object-contain invert mix-blend-multiply brightness-110 contrast-110"
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                            />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900">Digital Eye Strain Relief</h3>
-                        <p className="text-slate-600 mt-2 text-sm">Techniques like the 20-20-20 rule and eye rolling to reduce dryness and fatigue.</p>
+                        <h3 className="text-xl font-bold text-slate-900">Chin Tucks</h3>
+                        <p className="text-slate-600 mt-2 text-sm">Corrects forward head posture by strengthening deep cervical flexors.</p>
                     </div>
 
-                    {/* Category: Wrists */}
+                    {/* Exercise 2: Pectoralis Stretch */}
                     <div className="group cursor-pointer">
-                        <div className="relative aspect-video bg-purple-100 rounded-2xl overflow-hidden mb-4 border border-purple-200 group-hover:shadow-lg transition-all">
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <Hand className="w-16 h-16 text-purple-400 opacity-50" />
-                            </div>
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                <PlayCircle className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity transform scale-90 group-hover:scale-100" />
-                            </div>
+                        <div className="relative aspect-video bg-white rounded-2xl overflow-hidden mb-4 border border-slate-200 group-hover:shadow-lg transition-all flex items-center justify-center">
+                            <video
+                                src="/videos/pectoralis-stretch.mp4"
+                                className="w-full h-full object-contain invert mix-blend-multiply brightness-110 contrast-110"
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                            />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900">Carpal Tunnel Prevention</h3>
-                        <p className="text-slate-600 mt-2 text-sm">Wrist stretches and extensions to combat repetitive strain from typing.</p>
+                        <h3 className="text-xl font-bold text-slate-900">Pectoralis Stretch</h3>
+                        <p className="text-slate-600 mt-2 text-sm">Opens up chest muscles that get tight from hunching over a keyboard.</p>
                     </div>
 
-                    {/* Category: Neck */}
+                    {/* Exercise 3: Heel Slides */}
                     <div className="group cursor-pointer">
-                        <div className="relative aspect-video bg-orange-100 rounded-2xl overflow-hidden mb-4 border border-orange-200 group-hover:shadow-lg transition-all">
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <Move className="w-16 h-16 text-orange-400 opacity-50" />
-                            </div>
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                <PlayCircle className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity transform scale-90 group-hover:scale-100" />
-                            </div>
+                        <div className="relative aspect-video bg-white rounded-2xl overflow-hidden mb-4 border border-slate-200 group-hover:shadow-lg transition-all flex items-center justify-center">
+                            <video
+                                src="/videos/heel-slides.mp4"
+                                className="w-full h-full object-contain invert mix-blend-multiply brightness-110 contrast-110"
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                            />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900">Tech Neck Correction</h3>
-                        <p className="text-slate-600 mt-2 text-sm">Neck tilts and shoulder rolls to release tension from poor posture.</p>
+                        <h3 className="text-xl font-bold text-slate-900">Heel Slides</h3>
+                        <p className="text-slate-600 mt-2 text-sm">Activates hamstrings and improves knee mobility while seated.</p>
                     </div>
 
                 </div>
