@@ -2,6 +2,7 @@
 alter table employees 
 add column if not exists auth_user_id uuid references auth.users(id);
 
+
 -- 2. Now run the rest of Phase 2 Schema (Safe to re-run due to 'if not exists')
 
 -- ==========================================
@@ -20,12 +21,17 @@ create table if not exists company_settings (
 
 alter table company_settings enable row level security;
 
+drop policy if exists "Public read settings" on company_settings;
 create policy "Public read settings" on company_settings for select using (true);
+
+drop policy if exists "HR update settings" on company_settings;
 create policy "HR update settings" on company_settings for update using (
   auth.uid() in (
     select id from profiles where company_id = company_settings.company_id and role = 'hr'
   )
 );
+
+drop policy if exists "HR insert settings" on company_settings;
 create policy "HR insert settings" on company_settings for insert with check (
   auth.uid() in (
     select id from profiles where company_id = company_settings.company_id and role = 'hr'
@@ -47,6 +53,8 @@ create table if not exists exercises (
 );
 
 alter table exercises enable row level security;
+
+drop policy if exists "Public read exercises" on exercises;
 create policy "Public read exercises" on exercises for select using (true);
 
 -- ==========================================
@@ -65,12 +73,17 @@ create table if not exists break_logs (
 
 alter table break_logs enable row level security;
 
+drop policy if exists "Employees can read own logs" on break_logs;
 create policy "Employees can read own logs" on break_logs for select using (
   auth.uid() in (select auth_user_id from employees where id = break_logs.employee_id)
 );
+
+drop policy if exists "Employees can insert own logs" on break_logs;
 create policy "Employees can insert own logs" on break_logs for insert with check (
   auth.uid() in (select auth_user_id from employees where id = break_logs.employee_id)
 );
+
+drop policy if exists "HR can read company logs" on break_logs;
 create policy "HR can read company logs" on break_logs for select using (
   auth.uid() in (
     select id from profiles where company_id = break_logs.company_id and role = 'hr'

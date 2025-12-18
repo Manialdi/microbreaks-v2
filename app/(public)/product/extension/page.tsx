@@ -15,7 +15,7 @@ export default function ExtensionPage() {
                 <div className="relative w-full max-w-4xl mx-auto bg-slate-100 rounded-2xl border border-gray-200 shadow-2xl overflow-hidden flex items-center justify-center p-8 md:p-12">
                     <div className="relative w-full h-[500px] md:h-[600px]">
                         <Image
-                            src="/sidepanel-ui.png"
+                            src="/images/extension-preview-new.png"
                             alt="MicroBreaks Chrome Extension Side Panel Interface"
                             fill
                             className="object-contain drop-shadow-2xl"
@@ -26,7 +26,7 @@ export default function ExtensionPage() {
 
             <section className="py-24 bg-slate-50">
                 <div className="container mx-auto px-4">
-                    <div className="grid md:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                         {/* Feature 1 */}
                         <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                             <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6">
@@ -49,7 +49,18 @@ export default function ExtensionPage() {
                             </p>
                         </div>
 
-                        {/* Feature 3 */}
+                        {/* Feature 3 (New) */}
+                        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-xl flex items-center justify-center mb-6">
+                                <Zap className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mb-3">Lightweight & Fast</h3>
+                            <p className="text-slate-600">
+                                Zero lag impact on your browser. Universal compatibility with Chrome, Edge, and Brave.
+                            </p>
+                        </div>
+
+                        {/* Feature 4 */}
                         <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                             <div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mb-6">
                                 <Shield className="w-6 h-6" />
@@ -59,41 +70,6 @@ export default function ExtensionPage() {
                                 We don't track your browsing history. The extension only "activates" when you start a break session.
                             </p>
                         </div>
-                    </div>
-                </div>
-            </section>
-
-            <section className="py-24 container mx-auto px-4">
-                <div className="flex flex-col md:flex-row items-center gap-16">
-                    <div className="flex-1">
-                        <h2 className="text-3xl font-bold text-slate-900 mb-6">Lightweight & Fast</h2>
-                        <div className="space-y-6">
-                            <div className="flex gap-4">
-                                <Zap className="w-6 h-6 text-yellow-500 shrink-0" />
-                                <div>
-                                    <h4 className="font-bold text-slate-900">Zero Lag</h4>
-                                    <p className="text-slate-600">Optimized to have zero impact on your browser's performance or memory usage.</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-4">
-                                <Laptop className="w-6 h-6 text-blue-500 shrink-0" />
-                                <div>
-                                    <h4 className="font-bold text-slate-900">Universal Compatibility</h4>
-                                    <p className="text-slate-600">Works on Chrome, Edge, Brave, and other Chromium-based browsers on Mac and Windows.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex-1 bg-slate-900 p-8 rounded-2xl text-white">
-                        <pre className="font-mono text-sm leading-relaxed overflow-x-auto">
-                            <span className="text-green-400">➜</span> <span className="text-blue-400">microbreaks</span> <span className="text-yellow-300">npm run build</span>{"\n"}
-                            Building extension...{"\n"}
-                            <span className="text-green-400">✔</span> Manifest V3 Validated{"\n"}
-                            <span className="text-green-400">✔</span> Bundle size: 45KB (Gzipped){"\n"}
-                            <span className="text-green-400">✔</span> Privacy check passed{"\n"}
-                            {"\n"}
-                            <span className="text-gray-400">Ready for deployment.</span>
-                        </pre>
                     </div>
                 </div>
             </section>

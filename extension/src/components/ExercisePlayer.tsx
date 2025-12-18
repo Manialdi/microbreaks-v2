@@ -9,12 +9,16 @@ import exercisesData from '../exercises.json';
 
 // Define Exercise Type
 type Exercise = {
-    id: number;
-    title: string;
+    id: number | string; // Supabase uses UUID string, json uses number
+    title?: string;
+    name?: string; // Supabase field
     duration: number;
-    instructions: string;
+    instructions?: string;
+    description?: string; // Supabase field
     category: string;
-    image: string;
+    image?: string;
+    video_url?: string;
+    gif_url?: string;
 };
 
 const exercises: Exercise[] = exercisesData as Exercise[];
@@ -81,8 +85,7 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
             }
         };
         fetchEmployee();
-
-        selectRandomExercise();
+        selectRandomExercise(); // Fire and forget
     }, []);
 
     const logExercise = async () => {
@@ -181,11 +184,53 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
         }
     };
 
-    const selectRandomExercise = () => {
-        // Simple random for now (could prevent repetition)
-        const random = exercises[Math.floor(Math.random() * exercises.length)];
-        setExercise(random);
-        setExerciseTimeLeft(random.duration || 60);
+    // Fetch exercises from Supabase
+    const fetchExercises = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('exercises')
+                .select('*');
+
+            if (error) {
+                console.error("Error fetching exercises:", error);
+                setDebugLog(`Fetch Error: ${error.message}`);
+                // Fallback to local JSON if DB fails? For now just log.
+                return [];
+            }
+            return data || [];
+        } catch (err: any) {
+            setDebugLog(`Fetch Ex Exception: ${err.message}`);
+            return [];
+        }
+    };
+
+    const selectRandomExercise = async () => {
+        // Fetch fresh list or use cached? For simplicity, fetch fresh or use a local state cache if optimizing.
+        // Let's fetch fresh for now to ensure we get the new video URLs. 
+        // OPTIMIZATION: In a real app, fetch once on mount and store in state. using `exercisesData` as fallback.
+
+        let availableExercises = await fetchExercises();
+
+        if (availableExercises.length === 0) {
+            // Fallback to static if DB empty
+            availableExercises = exercises;
+        }
+
+        const random = availableExercises[Math.floor(Math.random() * availableExercises.length)];
+
+        // Map DB fields to Component State (if names differ)
+        // seed_exercises.sql: name, description, duration_seconds, video_url
+        // Component expects: title, instructions, duration, video_url
+        const mappedExercise = {
+            ...random,
+            title: random.name || random.title,
+            instructions: random.description || random.instructions,
+            duration: random.duration_seconds || random.duration || 60,
+            image: random.gif_url || random.image // Use gif_url as image fallback
+        };
+
+        setExercise(mappedExercise);
+        setExerciseTimeLeft(mappedExercise.duration || 60);
         setIsActive(true);
     };
 
@@ -215,22 +260,27 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
 
             {/* Content - Scrollable */}
             <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 w-full">
-                <div className="relative rounded-xl overflow-hidden shadow-lg aspect-video bg-gray-100 group w-full shrink-0">
-                    {/* Image/Video Placeholder */}
-                    <img
-                        src={exercise.image}
-                        alt={exercise.title}
-                        className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
-                        {!isActive && sessionTimeLeft > 0 && (
-                            <button
-                                onClick={() => setIsActive(true)}
-                                className="bg-white/90 text-emerald-600 p-4 rounded-full shadow-xl hover:scale-110 transition-transform"
-                            >
-                                <Play size={32} fill="currentColor" />
-                            </button>
-                        )}
+                <div className="relative rounded-xl overflow-hidden shadow-lg aspect-video bg-white group w-full shrink-0 flex items-center justify-center">
+                    {/* Video Player or Image Fallback */}
+                    {exercise.video_url ? (
+                        <video
+                            src={exercise.video_url} // Extension will resolve relative path
+                            className="w-full h-full object-contain invert brightness-110 contrast-110"
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                        />
+                    ) : (
+                        <img
+                            src={exercise.image || exercise.gif_url} // Fallback to GIF or Image
+                            alt={exercise.title || exercise.name}
+                            className="w-full h-full object-contain"
+                        />
+                    )}
+
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors pointer-events-none">
+                        {/* Play Button Overlay (Optional, if video is paused manually) */}
                     </div>
                 </div>
 
