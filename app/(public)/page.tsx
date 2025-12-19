@@ -31,8 +31,8 @@ export default function LandingPage() {
                     {/* Left Column: Text Content */}
                     <div className="lg:col-span-7 flex flex-col space-y-8 max-w-2xl text-left">
                         <div className="space-y-4">
-                            <h1 className="text-4xl lg:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
-                                Micro-breaks your team will actually <span className="text-blue-600">use</span>
+                            <h1 className="text-3xl lg:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
+                                <span className="text-blue-600">Micro-breaks</span> your team will actually use
                             </h1>
                             <p className="text-lg lg:text-xl text-slate-600 leading-relaxed max-w-lg">
                                 Micro Breaks delivers science-backed 2-minute breaks through gentle reminders employees love - all powered by a simple Chrome extension - with an HR analytics dashboard teams trust.
