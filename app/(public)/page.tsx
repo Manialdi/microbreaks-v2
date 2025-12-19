@@ -26,7 +26,7 @@ export default function LandingPage() {
     return (
         <div className="bg-gradient-to-b from-blue-50/50 to-white">
             {/* Hero Section */}
-            <section className="container mx-auto px-4 py-20 lg:py-32">
+            <section className="container mx-auto px-4 py-12 lg:py-16">
                 <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
                     {/* Left Column: Text Content */}
                     <div className="lg:col-span-7 flex flex-col space-y-8 max-w-2xl text-left">
@@ -40,7 +40,7 @@ export default function LandingPage() {
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                            <Link href="/login" className="inline-flex justify-center items-center px-8 py-4 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-500/25 active:scale-95 text-base">
+                            <Link href="/hr/signup" className="inline-flex justify-center items-center px-8 py-4 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-500/25 active:scale-95 text-base">
                                 Start free for your team
                             </Link>
                             <Link href="#how-it-works" className="inline-flex justify-center items-center px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-xl font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 text-base">
@@ -97,7 +97,7 @@ export default function LandingPage() {
             </section>
 
             {/* Problems & Benefits Section */}
-            <section className="bg-white py-24 lg:py-32">
+            <section className="bg-white py-12 lg:py-16">
                 <div className="container mx-auto px-4">
                     <div className="max-w-3xl mx-auto text-center mb-16">
                         <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-6 tracking-tight">
@@ -159,7 +159,7 @@ export default function LandingPage() {
             </section>
 
             {/* How Micro Breaks Works Section */}
-            <section id="how-it-works" className="bg-slate-50 py-24 lg:py-32">
+            <section id="how-it-works" className="bg-slate-50 py-12 lg:py-16">
                 <div className="container mx-auto px-4">
                     <div className="max-w-3xl mx-auto text-center mb-16">
                         <span className="text-blue-600 font-semibold tracking-wide uppercase text-sm">HOW MICRO BREAKS WORKS</span>
@@ -228,7 +228,7 @@ export default function LandingPage() {
             </section>
 
             {/* Built for HR Section */}
-            <section className="bg-slate-50 py-24 lg:py-32">
+            <section className="bg-slate-50 py-12 lg:py-16">
                 <div className="container mx-auto px-4">
                     <div className="max-w-3xl mx-auto text-center mb-16">
                         <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-6 tracking-tight">

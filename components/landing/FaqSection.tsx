@@ -23,6 +23,26 @@ const faqs = [
     {
         question: "Is data secure?",
         answer: "Yes. Micro Breaks uses best practices for security and only tracks what’s required to deliver core functionality."
+    },
+    {
+        question: "Can I customize the break schedule?",
+        answer: "Yes. While we recommend defaults, teams can adjust frequency and duration to suit their specific workflow needs."
+    },
+    {
+        question: "Does it work on other browsers?",
+        answer: "Micro Breaks is currently optimized for Chromium-based browsers like Google Chrome, Microsoft Edge, and Brave."
+    },
+    {
+        question: "Do you offer Enterprise SSO?",
+        answer: "Yes, our key feature for enterprise plans includes Single Sign-On (SSO) integration for seamless and secure access."
+    },
+    {
+        question: "Can I use Micro Breaks for remote teams?",
+        answer: "Absolutely. Since it's browser-based, it works perfectly for distributed teams, keeping everyone on the same wellness page."
+    },
+    {
+        question: "How do I request a new feature?",
+        answer: "We love feedback! You can reach out to our support team or submit requests directly through the user portal."
     }
 ]
 
