@@ -33,8 +33,8 @@ const faqs = [
         answer: "Micro Breaks is currently optimized for Chromium-based browsers like Google Chrome, Microsoft Edge, and Brave."
     },
     {
-        question: "Do you offer Enterprise SSO?",
-        answer: "Yes, our key feature for enterprise plans includes Single Sign-On (SSO) integration for seamless and secure access."
+        question: "Is there a free trial?",
+        answer: "Yes! We offer a 14-day free trial for teams so you can experience the benefits of Micro Breaks before committing."
     },
     {
         question: "Can I use Micro Breaks for remote teams?",
@@ -54,7 +54,7 @@ export function FaqSection() {
     }
 
     return (
-        <section className="bg-slate-50 py-24 lg:py-32">
+        <section className="bg-slate-50 py-12 lg:py-16">
             <div className="container mx-auto px-4">
                 <div className="max-w-3xl mx-auto text-center mb-16">
                     <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-6 tracking-tight">
@@ -62,7 +62,7 @@ export function FaqSection() {
                     </h2>
                 </div>
 
-                <div className="max-w-2xl mx-auto space-y-4">
+                <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6 items-start">
                     {faqs.map((faq, index) => (
                         <div
                             key={index}
