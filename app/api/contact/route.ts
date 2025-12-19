@@ -38,7 +38,7 @@ export async function POST(request: Request) {
                 <p><strong>Message:</strong></p>
                 <p>${message}</p>
             `,
-            reply_to: email, // Valid property is reply_to, not replyTo
+            replyTo: email,
         });
 
         if (data.error) {
