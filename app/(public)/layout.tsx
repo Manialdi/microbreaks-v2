@@ -37,19 +37,22 @@ export default function MarketingLayout({
                             <Link href="/solutions" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">All Solutions</Link>
                         </div>
 
-                        {/* Company */}
-                        <div className="flex flex-col space-y-4">
-                            <h4 className="font-semibold text-slate-900">Company</h4>
-                            <Link href="/contact" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Contact</Link>
-                        </div>
-
-
-
                         {/* Legal */}
                         <div className="flex flex-col space-y-4">
                             <h4 className="font-semibold text-slate-900">Legal</h4>
                             <Link href="/privacy" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Privacy</Link>
                             <Link href="#" className="text-slate-600 hover:text-blue-600 text-sm transition-colors">Terms</Link>
+                        </div>
+
+                        {/* Contact */}
+                        <div className="flex flex-col space-y-4">
+                            <h4 className="font-semibold text-slate-900">Contact</h4>
+                            <div className="text-sm text-slate-600 space-y-2">
+                                <p>For sales and general inquiries:</p>
+                                <a href="mailto:sales@micro-breaks.com" className="block text-blue-600 hover:underline">
+                                    sales@micro-breaks.com
+                                </a>
+                            </div>
                         </div>
                     </div>
 
