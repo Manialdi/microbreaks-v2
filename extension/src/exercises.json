@@ -1,42 +1,122 @@
 [
     {
         "id": 1,
-        "title": "Neck Rolls",
+        "title": "Chin Tucks",
+        "category": "stretch",
+        "description": "Start with neutral position - chin touching the index finger. 1 sec - head moving backward. 4 secs - holding the face in that position. 1 sec - head coming back to neutral position. Loop ends.",
         "duration": 60,
-        "instructions": "Gently roll your neck in a circular motion. 30 seconds clockwise, 30 seconds counter-clockwise.",
-        "category": "Neck",
-        "image": "https://placehold.co/400x300/e2e8f0/1e293b?text=Neck+Rolls"
+        "video_url": "/videos/chin-tucks.mp4"
     },
     {
         "id": 2,
-        "title": "Wrist Flexor Stretch",
+        "title": "Side Neck Stretch",
+        "category": "stretch",
+        "description": "Start Position: Person seated upright on a chair. Gentle Tilt (2 sec): Head slowly tilts to the right, ear moving toward shoulder. Hold Stretch (7 sec): Head remains gently tilted. Return to Center (1 sec): Head slowly returns to neutral. Repeat.",
         "duration": 60,
-        "instructions": "Extend your arm with palm facing up. Use the other hand to gently pull fingers back towards you.",
-        "category": "Wrists",
-        "image": "https://placehold.co/400x300/e2e8f0/1e293b?text=Wrist+Stretch"
+        "video_url": "/videos/side-neck-stretch.mp4"
     },
     {
         "id": 3,
-        "title": "Seated Spine Twist",
+        "title": "Seated Neck Rotation",
+        "category": "stretch",
+        "description": "Start Position: Person seated upright. Rotate (2 sec): Head slowly turns to the right. Chin stays level. Hold End Range (1 sec): Head gently holds at comfortable end. Return to Center (2 sec): Head slowly rotates back to center. Repeat on other side.",
         "duration": 60,
-        "instructions": "Sit tall. Twist your torso to the right, holding the chair back. Hold for 30s, then switch sides.",
-        "category": "Back",
-        "image": "https://placehold.co/400x300/e2e8f0/1e293b?text=Spine+Twist"
+        "video_url": "/videos/seated-neck-rotation.mp4"
     },
     {
         "id": 4,
-        "title": "Eye Palming",
+        "title": "Upper Body & Arm Stretch",
+        "category": "stretch",
+        "description": "Lift Arms Overhead (2 sec): Push your arms stretching upward. Palms facing upward. Hold Stretch (26 sec): Arms remain overhead. Spine stays tall. Release (2 sec): Back to upright position.",
         "duration": 60,
-        "instructions": "Rub palms together to generate heat. Cup them over closed eyes without pressing. Breathe deeply.",
-        "category": "Eyes",
-        "image": "https://placehold.co/400x300/e2e8f0/1e293b?text=Eye+Palming"
+        "video_url": "/videos/upper-body-arm-stretch.mp4"
     },
     {
         "id": 5,
-        "title": "Shoulder Shrugs",
+        "title": "Triceps Stretch",
+        "category": "stretch",
+        "description": "Start Position: Left hand reaches up and lightly presses the right elbow backward/downward. Hold Stretch (30 sec): Stretch is held comfortably. Change Hand.",
         "duration": 60,
-        "instructions": "Lift shoulders towards ears, hold for 3 seconds, then release. Repeat.",
-        "category": "Shoulders",
-        "image": "https://placehold.co/400x300/e2e8f0/1e293b?text=Shoulder+Shrugs"
+        "video_url": "/videos/triceps-stretch.mp4"
+    },
+    {
+        "id": 6,
+        "title": "Seated Side Stretch",
+        "category": "stretch",
+        "description": "Start Position: Right arm lifts straight up toward ceiling. Side Bend (2 sec): Upper body gently bends to the left. Hold Stretch (26 sec): Stretch held comfortably. Back to center position (2 sec).",
+        "duration": 60,
+        "video_url": "/videos/seated-side-stretch.mp4"
+    },
+    {
+        "id": 7,
+        "title": "Pectoralis Stretch",
+        "category": "stretch",
+        "description": "Start Position: Arms behind the body. Chest Opening Movement (2 sec): Arms gently straighten and lift. Shoulders roll down/back. Hold Stretch (25 sec). Release (3 sec): Back to start position.",
+        "duration": 60,
+        "video_url": "/videos/pectoralis-stretch.mp4"
+    },
+    {
+        "id": 8,
+        "title": "Seated Hip Stretch",
+        "category": "stretch",
+        "description": "Start Position: Right ankle gently placed over left knee. Upright position. Forward Lean (2 mins): Upper body leans slightly forward from the hips. Hold Stretch (26 sec): Stretch held comfortably. Return to Neutral (2 sec).",
+        "duration": 60,
+        "video_url": "/videos/seated-hip-stretch.mp4"
+    },
+    {
+        "id": 9,
+        "title": "Knee Extensions",
+        "category": "stretch",
+        "description": "Start Position: Person seated upright on chair. Extend leg (1 sec): Right leg slowly extends forward. Lower Leg (1 sec): Right foot returns slowly to floor. Repeat with other leg.",
+        "duration": 60,
+        "video_url": null
+    },
+    {
+        "id": 10,
+        "title": "Heel Slides",
+        "category": "stretch",
+        "description": "Start Position: Person seated upright on chair. Slide Heel Forward (1 sec): Right heel slides forward along the floor. Slide Heel Back (1 sec): Heel slides back under the knee. Repeat with other leg.",
+        "duration": 60,
+        "video_url": "/videos/heel-slides.mp4"
+    },
+    {
+        "id": 11,
+        "title": "Sit to Stands",
+        "category": "cardio",
+        "description": "Start Position: Person seated near front edge of chair. Stand Up (2 sec): Person leans slightly forward from hips. Stand Tall Pause (1 sec): Person fully upright. Sit Down (2 sec): Hips move back first. 5 sec loop.",
+        "duration": 60,
+        "video_url": "/videos/sit-to-stands.mp4"
+    },
+    {
+        "id": 12,
+        "title": "Seated Calf Raises",
+        "category": "stretch",
+        "description": "Start Position: Person seated upright on chair. Lift Heels (1 sec): Heels lift off the floor. Hold at Top (1 sec): Heels stay raised. Lower Heels (1 sec): Heels lower back to floor slowly. 3 sec loop.",
+        "duration": 60,
+        "video_url": "/videos/seated-calf-raises.mp4"
+    },
+    {
+        "id": 13,
+        "title": "Wrist Flexor Stretch",
+        "category": "stretch",
+        "description": "Start Position: Person seated upright. Right arm extended forward. Palm facing outward. Action (1 sec): Left hand lightly presses the fingers backward. Hold Stretch (13 sec): Stretch held comfortably. Release (1 sec). Repeat on other side.",
+        "duration": 60,
+        "video_url": "/videos/wrist-flexor-stretch.mp4"
+    },
+    {
+        "id": 14,
+        "title": "Wrist Circles",
+        "category": "stretch",
+        "description": "Start Position: Person seated upright. Forearms lifted. Wrist Rotation (28 sec): Both wrists rotate slowly and smoothly. Transition Pause (2 sec): Wrists return to neutral. Other side rotation for 30 sec.",
+        "duration": 60,
+        "video_url": null
+    },
+    {
+        "id": 15,
+        "title": "Eye Circles",
+        "category": "eye",
+        "description": "4 seconds for one figure-8 eye movement. Repeat continuously.",
+        "duration": 60,
+        "video_url": "/videos/eye-8-rotation.mp4"
     }
 ]

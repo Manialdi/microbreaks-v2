@@ -204,30 +204,27 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
         }
     };
 
-    const selectRandomExercise = async () => {
-        // Fetch fresh list or use cached? For simplicity, fetch fresh or use a local state cache if optimizing.
-        // Let's fetch fresh for now to ensure we get the new video URLs. 
-        // OPTIMIZATION: In a real app, fetch once on mount and store in state. using `exercisesData` as fallback.
-
-        let availableExercises = await fetchExercises();
+    const selectRandomExercise = () => {
+        // Use local exercises immediately for instant load
+        const availableExercises = exercises;
 
         if (availableExercises.length === 0) {
-            // Fallback to static if DB empty
-            availableExercises = exercises;
+            setDebugLog("No exercises found in local JSON.");
+            return;
         }
 
         const random = availableExercises[Math.floor(Math.random() * availableExercises.length)];
 
         // Map DB fields to Component State (if names differ)
-        // seed_exercises.sql: name, description, duration_seconds, video_url
+        // seed_exercises.sql / exercises.json: name/title, description, duration_seconds/duration, video_url
         // Component expects: title, instructions, duration, video_url
         const mappedExercise = {
             ...random,
-            title: random.name || random.title,
+            title: random.title || random.name,
             instructions: random.description || random.instructions,
-            duration: random.duration_seconds || random.duration || 60,
+            duration: random.duration || 60,
             image: random.gif_url || random.image // Use gif_url as image fallback
-        };
+        } as Exercise;
 
         setExercise(mappedExercise);
         setExerciseTimeLeft(mappedExercise.duration || 60);
