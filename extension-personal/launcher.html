@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open MicroBreaks</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            background-color: #f3f4f6;
+            margin: 0;
+        }
+
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>MicroBreaks</h1>
+    <p>Click below to open the exercise panel.</p>
+    <button id="openBtn">Open Side Panel</button>
+
+    <script>
+        document.getElementById('openBtn').addEventListener('click', async () => {
+            // We need to request the side panel to open in the current window
+            // Since this is a tab within the extension, we can communicate with background or try to open it directly if permitted (usually background only)
+            // Actually, sidePanel.open is BACKGROUND only?
+            // Documentation says: "This function can be used in the extension's service worker or other extension pages."
+            // So it SHOULD work here.
+
+            try {
+                // Get current window ID?
+                // Note: In a tab, we might not have 'chrome.windows' permission if not requested or strictly background?
+                // Extension pages share permissions.
+
+                // However, getting window info is async. "await" again?
+                // But here we present a button. The User clicks the button.
+                // The "await" inside a click handler is FINE because the handler itself is the gesture context?
+                // NO, usually await invalidates it.
+                // BUT in a regular DOM event handler, usually it's more lenient than SW.
+
+                // Let's try to just sendMessage to background "OPEN_ME_PLEASE" which might leverage the tab's context? No.
+                // The background needs the gesture.
+
+                // Let's try to open it directly.
+                const windowId = (await chrome.windows.getCurrent()).id;
+                await chrome.sidePanel.open({ windowId });
+                window.close(); // Close this launcher tab
+            } catch (e) {
+                alert("Failed to open: " + e.message);
+            }
+        });
+    </script>
+</body>
+
+</html>
