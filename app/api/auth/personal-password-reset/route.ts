@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
             type: 'recovery',
             email: email,
             options: {
-                redirectTo: 'https://www.micro-breaks.com/update-password' // Should exist or be created
+                redirectTo: 'https://www.micro-breaks.com/update-password-personal' // Dedicated Personal Page
             }
         });
 
