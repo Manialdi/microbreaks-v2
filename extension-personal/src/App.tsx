@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
-import Login from '@/components/Login';
+import Auth from '@/components/Auth';
 import PersonalHome from '@/components/PersonalHome';
 import ExerciseView from '@/components/ExerciseView';
 
@@ -35,9 +35,9 @@ function App() {
 
   if (loading) return <div className="h-full flex items-center justify-center">Loading...</div>;
 
-  // if (!session) {
-  //   return <Login />;
-  // }
+  if (!session) {
+    return <Auth />;
+  }
 
   if (view === 'exercise') {
     return <ExerciseView onComplete={() => setView('dashboard')} session={session as Session} />;
@@ -57,7 +57,7 @@ function App() {
   };
 
   // Use PersonalHome for standard view
-  return <PersonalHome onStartBreak={handleStartBreak} />;
+  return <PersonalHome onStartBreak={handleStartBreak} user={session?.user} />;
 }
 
 export default App;

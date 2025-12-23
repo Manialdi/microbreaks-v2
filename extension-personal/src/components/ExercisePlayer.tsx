@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, SkipForward, CheckCircle, Clock } from 'lucide-react';
+import { Play, SkipForward, CheckCircle, Clock, Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '../lib/supabase'; // Use shared client
 import exercisesData from '../exercises.json';
 
@@ -30,6 +30,7 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
     const [isActive, setIsActive] = useState(false);
     const [durationDisplay, setDurationDisplay] = useState(5);
     const [debugLog, setDebugLog] = useState<string>("Initializing Personal Mode...");
+    const [isMuted, setIsMuted] = useState(false);
     // Log Accumulator
     const [accumulatedDuration, setAccumulatedDuration] = useState(0);
 
@@ -189,7 +190,7 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
     return (
         <div className="flex flex-col h-full bg-white w-full box-border">
             {/* Header */}
-            <div className="bg-emerald-600 text-white p-4 flex justify-between items-center shadow-md shrink-0">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4 flex justify-between items-center shadow-md shrink-0">
                 <h1 className="text-sm font-bold flex items-center gap-2 truncate">
                     <Clock size={16} />
                     <span className="truncate">Microbreaks - {durationDisplay}m</span>
@@ -212,7 +213,7 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
                             className="w-full h-full object-contain invert brightness-110 contrast-110"
                             autoPlay
                             loop
-                            muted
+                            muted={isMuted}
                             playsInline
                         />
                     ) : (
@@ -226,16 +227,24 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors pointer-events-none">
                         {/* Play Button Overlay (Optional, if video is paused manually) */}
                     </div>
+
+                    {/* Mute Toggle */}
+                    {exercise.video_url && (
+                        <button
+                            onClick={() => setIsMuted(!isMuted)}
+                            className="absolute bottom-3 right-3 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full transition-colors z-20 backdrop-blur-sm shadow-md"
+                            title={isMuted ? "Unmute" : "Mute"}
+                        >
+                            {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                        </button>
+                    )}
                 </div>
 
                 <div className="text-center">
                     <h2 className="text-xl font-bold text-slate-800 mb-1">{exercise.title}</h2>
-                    <span className="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-wide">
-                        {exercise.category}
-                    </span>
                 </div>
 
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-slate-600 text-sm leading-relaxed">
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-slate-600 text-sm leading-relaxed h-20 overflow-y-auto flex-shrink-0">
                     {exercise.instructions}
                 </div>
             </div>

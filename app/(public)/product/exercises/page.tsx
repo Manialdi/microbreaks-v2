@@ -20,7 +20,7 @@ export default function ExercisesPage() {
                     <div className="group cursor-pointer">
                         <div className="relative aspect-video bg-white rounded-2xl overflow-hidden mb-4 border border-slate-200 group-hover:shadow-lg transition-all flex items-center justify-center">
                             <video
-                                src="/videos/chin-tucks.mp4"
+                                src="/videos/chin-tucks-v1.webm"
                                 className="w-full h-full object-contain invert mix-blend-multiply brightness-110 contrast-110"
                                 autoPlay
                                 loop
@@ -36,7 +36,7 @@ export default function ExercisesPage() {
                     <div className="group cursor-pointer">
                         <div className="relative aspect-video bg-white rounded-2xl overflow-hidden mb-4 border border-slate-200 group-hover:shadow-lg transition-all flex items-center justify-center">
                             <video
-                                src="/videos/pectoralis-stretch.mp4"
+                                src="/videos/pectoralis-stretch-v1.webm"
                                 className="w-full h-full object-contain invert mix-blend-multiply brightness-110 contrast-110"
                                 autoPlay
                                 loop
@@ -52,7 +52,7 @@ export default function ExercisesPage() {
                     <div className="group cursor-pointer">
                         <div className="relative aspect-video bg-white rounded-2xl overflow-hidden mb-4 border border-slate-200 group-hover:shadow-lg transition-all flex items-center justify-center">
                             <video
-                                src="/videos/heel-slides.mp4"
+                                src="/videos/heel-slides-v1.webm"
                                 className="w-full h-full object-contain invert mix-blend-multiply brightness-110 contrast-110"
                                 autoPlay
                                 loop

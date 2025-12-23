@@ -25,7 +25,7 @@ export default function IndividualPage() {
                         <div className="relative order-2 lg:order-1">
                             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200 bg-slate-900 aspect-video">
                                 <video
-                                    src="/videos/chin-tucks.mp4"
+                                    src="/videos/chin-tucks-v1.webm"
                                     autoPlay
                                     loop
                                     muted

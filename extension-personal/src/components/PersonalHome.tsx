@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Play, LogOut, Clock, Calendar, CheckCircle, Save, Lock, AlertTriangle, Flame, Activity } from 'lucide-react';
 
-export default function PersonalHome({ onStartBreak }: { onStartBreak: () => void }) {
+export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () => void, user: any }) {
     // Current active settings (truth)
     const [settings, setSettings] = useState({
         work_interval_minutes: 30,
@@ -16,7 +16,6 @@ export default function PersonalHome({ onStartBreak }: { onStartBreak: () => voi
     const [isSaved, setIsSaved] = useState(false);
 
     const [stats, setStats] = useState({ total_sessions: 0, total_seconds: 0, history: [] as string[] });
-    const [user, setUser] = useState<any>(null);
     const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
 
     // Sync draft with real settings on load
@@ -67,7 +66,7 @@ export default function PersonalHome({ onStartBreak }: { onStartBreak: () => voi
 
     // Load Data
     useEffect(() => {
-        supabase.auth.getUser().then(({ data }) => setUser(data.user));
+        // supabase.auth.getUser() handled by parent
 
         chrome.storage.local.get(['settings', 'stats', 'installDate'], (res) => {
             if (res.settings) {
@@ -122,17 +121,10 @@ export default function PersonalHome({ onStartBreak }: { onStartBreak: () => voi
         updateDraft('work_days', newDays);
     };
 
-    const handleLogin = async () => {
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: chrome.identity.getRedirectURL() }
-        });
-        if (error) console.error("Login failed:", error);
-    };
+
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
-        setUser(null);
     };
 
     const isTrialExpired = daysRemaining !== null && daysRemaining <= 0;
@@ -157,15 +149,11 @@ export default function PersonalHome({ onStartBreak }: { onStartBreak: () => voi
                     </div>
                 </div>
 
-                {user ? (
+                <div className="flex items-center gap-2">
                     <button onClick={handleLogout} className="p-2 hover:bg-white/20 rounded-full transition-all text-white/90 hover:text-white" title="Log Out">
                         <LogOut className="h-4 w-4" />
                     </button>
-                ) : (
-                    <button onClick={handleLogin} className="flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full text-xs font-bold transition-colors">
-                        <Save className="h-3 w-3" /> <span>Sync</span>
-                    </button>
-                )}
+                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6 pb-20">
