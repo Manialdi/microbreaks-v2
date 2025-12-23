@@ -73,10 +73,19 @@ export default function Auth() {
         setSuccessMsg(null);
 
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: 'https://www.micro-breaks.com/update-password',
+            // Call Custom API for Resend Email
+            const res = await fetch('https://www.micro-breaks.com/api/auth/personal-password-reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
             });
-            if (error) throw error;
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Reset failed');
+            }
+
             setSuccessMsg("Password reset email sent! Check your inbox.");
         } catch (err: any) {
             setError(err.message);
