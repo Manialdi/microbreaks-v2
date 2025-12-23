@@ -25,8 +25,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Email and password are required' }, { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+        // Use Personal Project Creds Explicitly
+        const supabaseUrl = 'https://vnhhlyceginwmeyohafs.supabase.co';
+        const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuaGhseWNlZ2lud21leW9oYWZzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NjIyNzI1MCwiZXhwIjoyMDgxODAzMjUwfQ.fht5PlUgw9vqaLDhTVAWMdt-RHP62tEwhzpYpQsPNn0';
 
         // 3. Admin Client (to generate link)
         const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
