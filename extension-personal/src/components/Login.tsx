@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Loader2, Mail, Lock } from 'lucide-react';
+import { Loader2, Mail, Lock, HelpCircle } from 'lucide-react';
 import logo from '@/assets/logo.jpg';
 
 export default function Login() {
@@ -153,6 +153,18 @@ export default function Login() {
                     >
                         {resetLoading ? 'Sending email...' : 'Forgot Password?'}
                     </button>
+
+                    <div className="pt-4 border-t border-white/10 mt-4 flex justify-center">
+                        <a
+                            href="https://www.micro-breaks.com/individual/help"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-xs text-indigo-100/70 hover:text-white transition-colors"
+                        >
+                            <HelpCircle size={14} />
+                            <span>Need Help?</span>
+                        </a>
+                    </div>
                 </form>
             </div>
         </div>

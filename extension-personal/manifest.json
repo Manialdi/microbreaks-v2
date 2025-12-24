@@ -32,7 +32,8 @@
         {
             "resources": [
                 "videos/*",
-                "assets/*"
+                "assets/*",
+                "assets/logo-v2.jpg"
             ],
             "matches": [
                 "<all_urls>"

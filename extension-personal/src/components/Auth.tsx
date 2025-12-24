@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Loader2, Mail, Lock, User, ArrowRight, ArrowLeft } from 'lucide-react';
 
@@ -14,6 +14,17 @@ export default function Auth() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
+    const [rememberMe, setRememberMe] = useState(false);
+
+    // Load persisted email
+    useEffect(() => {
+        chrome.storage.local.get(['rememberedEmail'], (res) => {
+            if (res.rememberedEmail) {
+                setEmail(res.rememberedEmail as string);
+                setRememberMe(true);
+            }
+        });
+    }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,6 +39,13 @@ export default function Auth() {
         if (error) {
             setError(error.message);
             setLoading(false);
+        } else {
+            // Success - Save Email if Remember Me is checked
+            if (rememberMe) {
+                chrome.storage.local.set({ rememberedEmail: email });
+            } else {
+                chrome.storage.local.remove('rememberedEmail');
+            }
         }
         // App.tsx listener handles success redirect
     };
@@ -119,8 +137,8 @@ export default function Auth() {
 
                 {/* Header */}
                 <div className="flex flex-col items-center mb-6">
-                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-lg text-indigo-600 font-bold text-3xl">
-                        M
+                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-lg overflow-hidden">
+                        <img src={chrome.runtime.getURL("assets/logo-v2.jpg")} alt="MB" className="w-full h-full object-cover" />
                     </div>
                     <h1 className="text-xl font-bold">MicroBreaks Personal</h1>
                     <p className="text-white/70 text-xs mt-1">
@@ -152,6 +170,17 @@ export default function Auth() {
                     <form onSubmit={handleLogin} className="space-y-4">
                         <InputGroup icon={<Mail />} type="email" placeholder="Email" value={email} onChange={setEmail} />
                         <InputGroup icon={<Lock />} type="password" placeholder="Password" value={password} onChange={setPassword} />
+
+                        <div className="flex items-center gap-2 text-xs text-white/80">
+                            <input
+                                type="checkbox"
+                                id="rememberMe"
+                                checked={rememberMe}
+                                onChange={(e) => setRememberMe(e.target.checked)}
+                                className="rounded border-white/30 bg-white/10 text-blue-600 focus:ring-blue-500"
+                            />
+                            <label htmlFor="rememberMe" className="cursor-pointer select-none">Remember Me</label>
+                        </div>
 
                         <button type="submit" disabled={loading} className="w-full bg-white text-indigo-600 py-3 rounded-xl font-bold hover:bg-blue-50 transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg">
                             {loading ? <Loader2 className="animate-spin h-4 w-4" /> : 'Sign In'}

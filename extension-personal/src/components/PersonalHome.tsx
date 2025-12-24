@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Play, LogOut, Clock, Calendar, CheckCircle, Save, Lock, AlertTriangle, Flame, Activity } from 'lucide-react';
+import { Play, LogOut, Clock, Calendar, CheckCircle, Save, Lock, AlertTriangle, Flame, Activity, HelpCircle } from 'lucide-react';
 
 export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () => void, user: any }) {
     // Current active settings (truth)
     const [settings, setSettings] = useState({
-        work_interval_minutes: 30,
+        work_interval_minutes: 60, // Default 60 mins
+        break_duration_minutes: 2, // Default 2 mins
         start_hour: 9,
         end_hour: 17,
-        work_days: [1, 2, 3, 4, 5]
+        work_days: [1, 2, 3, 4, 5] // Mon-Fri default
     });
 
     // Draft settings for form inputs (manual save)
@@ -70,8 +71,14 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
 
         chrome.storage.local.get(['settings', 'stats', 'installDate'], (res) => {
             if (res.settings) {
-                setSettings(res.settings as any);
-                setDraftSettings(res.settings as any); // Initialize draft
+                // Merge saved settings with defaults to ensure new keys (like break_duration_minutes) exist
+                const saved = res.settings as any;
+                const merged = { ...settings, ...saved };
+                // Ensure specific defaults if still missing (double safety)
+                if (!merged.break_duration_minutes) merged.break_duration_minutes = 2;
+
+                setSettings(merged);
+                setDraftSettings(merged); // Initialize draft
             }
             if (res.stats) setStats(res.stats as any);
 
@@ -79,9 +86,9 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
                 const now = Date.now();
                 const diff = now - (res.installDate as number);
                 const daysUsed = diff / (1000 * 60 * 60 * 24);
-                setDaysRemaining(Math.max(0, Math.ceil(14 - daysUsed)));
+                setDaysRemaining(Math.max(0, Math.ceil(7 - daysUsed)));
             } else {
-                setDaysRemaining(14);
+                setDaysRemaining(7);
             }
         });
 
@@ -136,27 +143,46 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
             {/* Header */}
             <div className="relative z-10 flex justify-between items-center p-6 pb-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center">
-                        <span className="font-bold">M</span>
+                    <div className="w-8 h-8 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center overflow-hidden">
+                        <img src={chrome.runtime.getURL("assets/logo-v2.jpg")} alt="MB" className="w-full h-full object-cover" />
                     </div>
                     <div>
-                        <h1 className="text-lg font-bold tracking-tight leading-none">My Health</h1>
-                        {daysRemaining !== null && !isLocked && (
+                        <h1 className="text-lg font-bold tracking-tight leading-none">
+                            Dashboard - {user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}
+                        </h1>
+                        {!isLocked ? (
                             <span className="text-[10px] font-medium bg-white/20 px-1.5 py-0.5 rounded text-white/90">
-                                {daysRemaining} Days Left
+                                Free Plan · {daysRemaining} days left
                             </span>
+                        ) : (
+                            isPro ? (
+                                <span className="text-[10px] font-medium bg-emerald-500/20 px-1.5 py-0.5 rounded text-white/90">
+                                    Pro Plan · Unlimited microbreaks
+                                </span>
+                            ) : null
                         )}
+                        <p className="text-[10px] text-blue-100 italic mt-1 opacity-80">"Mental clarity starts with physical reset"</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <button onClick={handleLogout} className="p-2 hover:bg-white/20 rounded-full transition-all text-white/90 hover:text-white" title="Log Out">
+                <div className="flex flex-col items-end gap-1">
+                    <button onClick={handleLogout} className="flex items-center gap-1.5 p-1.5 hover:bg-white/10 rounded-lg transition-all text-white/90 hover:text-white group" title="Log Out">
+                        <span className="text-[10px] text-blue-100 italic opacity-80 group-hover:opacity-100 transition-opacity">Logout</span>
                         <LogOut className="h-4 w-4" />
                     </button>
+                    <a
+                        href="https://www.micro-breaks.com/individual/help"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[10px] text-blue-100 hover:text-white transition-colors opacity-80 hover:opacity-100 pr-1.5"
+                    >
+                        <HelpCircle size={12} />
+                        Help
+                    </a>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6 pb-20">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-20">
 
                 {/* Trial Expired Alert */}
                 {isLocked && (
@@ -166,7 +192,7 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
                             <span>Trial Expired</span>
                         </div>
                         <p className="text-xs text-red-600 leading-relaxed">
-                            Your 14-day free trial has ended. To continue using MicroBreaks, please upgrade to the Lifetime plan.
+                            Your 7-day free trial has ended. To continue using MicroBreaks, please upgrade to the Lifetime plan.
                         </p>
                     </div>
                 )}
@@ -178,32 +204,36 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
                     className={`w-full group relative overflow-hidden text-white shadow-lg py-4 rounded-2xl font-bold transition transform flex items-center justify-center gap-2 
                     ${isLocked
                             ? 'bg-gray-400 cursor-not-allowed grayscale'
-                            : 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-blue-500/20 active:scale-[0.98] cursor-pointer'}`}
+                            : 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-blue-500/20 active:scale-[0.98] cursor-pointer'
+                        }`}
                 >
                     {isLocked ? <Lock className="h-5 w-5" /> : <Play className="h-5 w-5 fill-white" />}
                     <span>{isLocked ? 'Unlock to Start' : 'Start Micro-break'}</span>
                 </button>
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-center">
-                        <p className="text-xs text-gray-400 font-bold uppercase mb-1 flex items-center justify-center gap-1">
-                            <Activity size={12} /> Today's Breaks
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 text-center">
+                        <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 flex items-center justify-center gap-1">
+                            <Activity size={10} /> Today's Breaks
                         </p>
-                        <div className="text-2xl font-black text-gray-800">{getTodayBreaks(stats.history)}</div>
+                        <div className="text-base font-black text-gray-800">{getTodayBreaks(stats.history)}</div>
+                        <p className="text-[9px] text-gray-400 mt-0.5 font-medium">Most users do 5–8 per day</p>
                     </div>
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-center">
-                        <p className="text-xs text-gray-400 font-bold uppercase mb-1 flex items-center justify-center gap-1">
-                            <Flame size={12} className="text-orange-500" /> Current Streak
+                    <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 text-center">
+                        <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 flex items-center justify-center gap-1">
+                            <Flame size={10} className="text-orange-500" /> Streak
                         </p>
-                        <div className="text-2xl font-black text-gray-800">{calculateStreak(stats.history)} <span className="text-xs font-medium text-gray-400">days</span></div>
+                        <div className="text-base font-black text-gray-800">{calculateStreak(stats.history)} <span className="text-[9px] font-medium text-gray-400">days</span></div>
+                        <p className="text-[9px] text-gray-400 mt-0.5 font-medium">Consistency beats intensity</p>
                     </div>
                 </div>
 
-                {/* Schedule Card (Manual Save) */}
-                <div className={`bg-white p-5 rounded-2xl shadow-sm border border-gray-100 transition-opacity ${isLocked ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <Calendar size={16} /> Schedule
+                {/* Schedule Card (Manual Save) - Compact */}
+                {/* Schedule Card (Manual Save) - Compact */}
+                <div className={`bg-white p-4 rounded-2xl shadow-sm border border-gray-100 transition-opacity ${isLocked ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <h3 className="text-xs font-bold text-gray-900 mb-2 flex items-center gap-2">
+                        <Calendar size={14} /> Schedule
                     </h3>
 
                     {/* Days */}
@@ -223,13 +253,13 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
                     </div>
 
                     {/* Hours */}
-                    <div className="flex items-center gap-3 mb-5">
+                    <div className="flex items-center gap-2 mb-3">
                         <div className="flex-1">
                             <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Start</label>
                             <select
                                 value={draftSettings.start_hour}
                                 onChange={(e) => updateDraft('start_hour', parseInt(e.target.value))}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-lg text-sm px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg text-xs px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 {Array.from({ length: 24 }).map((_, i) => (
                                     <option key={i} value={i}>{i}:00</option>
@@ -242,7 +272,7 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
                             <select
                                 value={draftSettings.end_hour}
                                 onChange={(e) => updateDraft('end_hour', parseInt(e.target.value))}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-lg text-sm px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg text-xs px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 {Array.from({ length: 24 }).map((_, i) => (
                                     <option key={i} value={i}>{i}:00</option>
@@ -251,22 +281,57 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
                         </div>
                     </div>
 
-                    <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                        <Clock size={16} /> Frequency
+                    <h3 className="text-xs font-bold text-gray-900 mb-2 flex items-center gap-2">
+                        <Clock size={14} /> Micro-Break Duration
                     </h3>
-                    <div className="flex justify-between gap-2 mb-4">
-                        {[15, 30, 45, 60].map((m) => (
+                    <div className="flex justify-between gap-2 mb-3">
+                        {[2, 5].map((m) => (
                             <button
                                 key={m}
-                                onClick={() => updateDraft('work_interval_minutes', m)}
-                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${draftSettings.work_interval_minutes === m
-                                    ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-500 ring-offset-1'
+                                onClick={() => updateDraft('break_duration_minutes', m)}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${draftSettings.break_duration_minutes === m
+                                    ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-500 shadow-sm'
                                     : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                                     }`}
                             >
-                                {m}m
+                                {m} mins
+                                {draftSettings.break_duration_minutes === m && (
+                                    <CheckCircle size={14} className="text-emerald-500" />
+                                )}
                             </button>
                         ))}
+                    </div>
+
+                    <h3 className="text-xs font-bold text-gray-900 mb-2 flex items-center gap-2">
+                        <Clock size={14} /> Frequency (mins)
+                    </h3>
+                    <div className="mb-3">
+                        <input
+                            type="range"
+                            min="0"
+                            max="5"
+                            step="1"
+                            value={[15, 30, 45, 60, 90, 120].indexOf(draftSettings.work_interval_minutes) !== -1
+                                ? [15, 30, 45, 60, 90, 120].indexOf(draftSettings.work_interval_minutes)
+                                : 3} // Default to 60 (index 3) if invalid
+                            onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                const options = [15, 30, 45, 60, 90, 120];
+                                updateDraft('work_interval_minutes', options[val]);
+                            }}
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        />
+                        <div className="flex justify-between text-[10px] text-gray-400 font-bold uppercase mt-2 px-1">
+                            <span>15</span>
+                            <span>30</span>
+                            <span>45</span>
+                            <span>60</span>
+                            <span>90</span>
+                            <span>120</span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-3 text-center italic">
+                            Aim for one small break each hour.
+                        </p>
                     </div>
 
                     {/* NEW: Save Button for Frequency */}
@@ -282,6 +347,7 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
                     </button>
                 </div>
 
+                {/* Paywall / Upgrade */}
                 {/* Paywall / Upgrade */}
                 <div className={`bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-100 p-5 rounded-2xl ${isLocked ? 'ring-2 ring-orange-400 shadow-xl' : ''}`}>
                     <h4 className="text-base font-bold text-orange-900 mb-1">
@@ -309,6 +375,6 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
                 </div>
 
             </div>
-        </div>
+        </div >
     );
 }

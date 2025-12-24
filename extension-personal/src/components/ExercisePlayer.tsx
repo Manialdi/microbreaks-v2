@@ -1,20 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Play, SkipForward, CheckCircle, Clock, Volume2, VolumeX } from 'lucide-react';
+import { Play, SkipForward, CheckCircle, Clock, Volume2, VolumeX, Lightbulb, Sparkles } from 'lucide-react';
 import { supabase } from '../lib/supabase'; // Use shared client
 import exercisesData from '../exercises.json';
 
-// const supabaseUrl = import.meta.env.VITE_SUPABASE_URL; // Removed
-// const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY; // Removed
-// const supabase = createClient(supabaseUrl, supabaseKey); // Removed
-
 // Define Exercise Type
 type Exercise = {
-    id: number | string; // Supabase uses UUID string, json uses number
+    id: number | string;
     title?: string;
-    name?: string; // Supabase field
+    name?: string;
     duration: number;
     instructions?: string;
-    description?: string; // Supabase field
+    description?: string;
     category: string;
     image?: string;
     video_url?: string;
@@ -22,6 +18,24 @@ type Exercise = {
 };
 
 const exercises: Exercise[] = exercisesData as Exercise[];
+
+const BENEFITS_MAP: Record<string, string[]> = {
+    "Seated Side Stretch": ["Releases side-body and back tension", "Improves seated posture and flexibility"],
+    "Upper Body & Arm Stretch": ["Relieves upper-body stiffness", "Improves shoulder and arm mobility"],
+    "Seated Neck Rotation": ["Reduces neck stiffness from screen use", "Improves neck range of motion"],
+    "Chin Tucks": ["Strengthens deep neck muscles", "Reduces forward-head posture strain"],
+    "Side Neck Stretch": ["Relieves neck and shoulder tightness", "Eases tension from prolonged sitting"],
+    "Knee Extensions": ["Improves knee mobility and circulation", "Reduces stiffness from long sitting"],
+    "Wrist Circles": ["Improves wrist flexibility", "Reduces strain from typing and mouse use"],
+    "Sit to Stands": ["Activates leg and core muscles", "Boosts circulation after sitting"],
+    "Wrist Flexor Stretch": ["Relieves wrist and forearm tension", "Helps prevent repetitive strain discomfort"],
+    "Seated Calf Raises": ["Improves blood flow in lower legs", "Reduces leg fatigue and stiffness"],
+    "Eye Circles": ["Reduces digital eye strain", "Refreshes visual focus"],
+    "Seated Hip Stretch": ["Releases tight hip muscles", "Improves lower-body mobility"],
+    "Pectoralis Stretch": ["Opens the chest and shoulders", "Counteracts rounded sitting posture"],
+    "Heel Slides": ["Improves ankle and knee mobility", "Reduces lower-limb stiffness"],
+    "Triceps Stretch": ["Relieves upper-arm tension", "Improves shoulder range of motion"]
+};
 
 export default function ExercisePlayer({ onComplete }: { onComplete: () => void }) {
     const [exercise, setExercise] = useState<Exercise | null>(null);
@@ -33,6 +47,8 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
     const [isMuted, setIsMuted] = useState(false);
     // Log Accumulator
     const [accumulatedDuration, setAccumulatedDuration] = useState(0);
+    // Track played exercises in this session
+    const [sessionHistory, setSessionHistory] = useState<string[]>([]);
 
     const extendTimer = () => {
         setSessionTimeLeft((prev) => prev + 60);
@@ -154,7 +170,17 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
 
     const selectRandomExercise = () => {
         // Use local exercises immediately for instant load
-        const availableExercises = exercises;
+        let availableExercises = exercises.filter(e => {
+            const id = e.title || e.name || "";
+            return !sessionHistory.includes(id);
+        });
+
+        // If we ran out of unique exercises (e.g. really long session), reset pool or fallback to full list
+        if (availableExercises.length === 0) {
+            // Optional: reset history check? Or just allow repeats.
+            // Let's allow repeats but try to minimize immediate repeat if possible
+            availableExercises = exercises;
+        }
 
         if (availableExercises.length === 0) {
             setDebugLog("No exercises found in local JSON.");
@@ -162,6 +188,10 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
         }
 
         const random = availableExercises[Math.floor(Math.random() * availableExercises.length)];
+        const randomId = random.title || random.name || "";
+
+        // Add to history
+        setSessionHistory(prev => [...prev, randomId]);
 
         // Map DB fields to Component State (if names differ)
         // seed_exercises.sql / exercises.json: name/title, description, duration_seconds/duration, video_url
@@ -187,45 +217,69 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
+    // Get Benefits
+    const benefits = BENEFITS_MAP[exercise.title || ""] || [];
+
     return (
-        <div className="flex flex-col h-full bg-white w-full box-border">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4 flex justify-between items-center shadow-md shrink-0">
-                <h1 className="text-sm font-bold flex items-center gap-2 truncate">
-                    <Clock size={16} />
+        <div className="flex flex-col h-screen bg-white w-full box-border overflow-hidden">
+            {/* Header (Expanded) */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4 flex justify-between items-center shadow-md shrink-0 z-10">
+                <h1 className="text-lg font-bold flex items-center gap-2 truncate">
+                    <Clock size={18} />
                     <span className="truncate">Microbreaks - {durationDisplay}m</span>
                 </h1>
                 <div className="flex flex-col items-end">
-                    <span className="text-[10px] uppercase opacity-80 font-bold tracking-wider">Session Left</span>
-                    <span className="text-sm font-mono font-bold leading-none">
+                    <span className="text-xs uppercase opacity-80 font-bold tracking-wider">Session Left</span>
+                    <span className="text-base font-mono font-bold leading-none">
                         {formatTime(sessionTimeLeft)}
                     </span>
                 </div>
             </div>
 
-            {/* Content - Scrollable */}
-            <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 w-full">
-                <div className="relative rounded-xl overflow-hidden shadow-lg aspect-video bg-white group w-full shrink-0 flex items-center justify-center">
-                    {/* Video Player or Image Fallback */}
-                    {exercise.video_url ? (
-                        <video
-                            src={exercise.video_url} // Extension will resolve relative path
-                            className="w-full h-full object-contain invert brightness-110 contrast-110"
-                            autoPlay
-                            loop
-                            muted={isMuted}
-                            playsInline
-                        />
-                    ) : (
-                        <img
-                            src={exercise.image || exercise.gif_url} // Fallback to GIF or Image
-                            alt={exercise.title || exercise.name}
-                            className="w-full h-full object-contain"
-                        />
-                    )}
+            {/* Content - Scrollable if needed, but ideally fits */}
+            <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-2 w-full no-scrollbar">
 
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors pointer-events-none">
-                        {/* Play Button Overlay (Optional, if video is paused manually) */}
+                {/* Video Container (Expanded to 200px) */}
+                <div className="relative rounded-xl overflow-hidden shadow-md aspect-video bg-gray-50 group w-full shrink-0 flex items-center justify-center max-h-[200px]">
+
+                    {/* Ambient Background Layer */}
+                    <div className="absolute inset-0 z-0 overflow-hidden">
+                        {exercise.video_url ? (
+                            <video
+                                src={exercise.video_url}
+                                className="w-full h-full object-cover blur-xl opacity-50 scale-125 saturate-150 invert brightness-110 contrast-110" // Match invert logic of main video
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                            />
+                        ) : (
+                            <img
+                                src={exercise.image || exercise.gif_url}
+                                className="w-full h-full object-cover blur-xl opacity-50 scale-125 saturate-150"
+                            />
+                        )}
+                        <div className="absolute inset-0 bg-white/20"></div> {/* Light overlay to blend */}
+                    </div>
+
+                    {/* Main Content Layer */}
+                    <div className="relative z-10 w-full h-full flex items-center justify-center">
+                        {exercise.video_url ? (
+                            <video
+                                src={exercise.video_url}
+                                className="w-full h-full object-contain invert brightness-110 contrast-110 drop-shadow-md p-2"
+                                autoPlay
+                                loop
+                                muted={isMuted}
+                                playsInline
+                            />
+                        ) : (
+                            <img
+                                src={exercise.image || exercise.gif_url}
+                                alt={exercise.title || exercise.name}
+                                className="w-full h-full object-contain drop-shadow-md p-2"
+                            />
+                        )}
                     </div>
 
                     {/* Mute Toggle */}
@@ -235,34 +289,48 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
                             className="absolute bottom-3 right-3 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full transition-colors z-20 backdrop-blur-sm shadow-md"
                             title={isMuted ? "Unmute" : "Mute"}
                         >
-                            {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
                         </button>
                     )}
                 </div>
 
-                <div className="text-center">
-                    <h2 className="text-xl font-bold text-slate-800 mb-1">{exercise.title}</h2>
+                {/* Text Content */}
+                <div className="text-center shrink-0">
+                    <h2 className="text-xl font-bold text-slate-900 leading-tight">{exercise.title}</h2>
                 </div>
 
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-slate-600 text-sm leading-relaxed h-20 overflow-y-auto flex-shrink-0">
-                    {exercise.instructions}
-                </div>
+                {/* Benefits Section - Compact */}
+                {benefits.length > 0 && (
+                    <div className="bg-indigo-50/50 rounded-lg p-2 border border-indigo-100 shrink-0 mt-0">
+                        <div className="flex items-center gap-1.5 mb-1 justify-center">
+                            <Sparkles size={12} className="text-indigo-600" />
+                            <span className="text-xs font-bold text-indigo-800 uppercase tracking-wide">Key Benefits</span>
+                        </div>
+                        <ul className="space-y-1.5">
+                            {benefits.map((benefit, i) => (
+                                <li key={i} className="flex items-start gap-2 text-xs text-indigo-900/90 leading-snug">
+                                    <CheckCircle size={12} className="text-indigo-500 mt-0.5 shrink-0" />
+                                    <span>{benefit}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
 
-            {/* Footer - Fixed Controls */}
-            <div className="p-3 border-t bg-slate-50">
-                <div className="flex flex-col gap-3">
-                    <div className="flex justify-between items-end mb-1">
-                        <div className="flex flex-col">
-                            <span className="text-slate-400 font-semibold text-xs tracking-wider uppercase">Exercise Remaining</span>
-                            <span className="text-2xl font-mono font-bold text-slate-800 leading-none">
-                                {formatTime(exerciseTimeLeft)}
-                            </span>
-                        </div>
+            {/* Footer - Fixed Controls (Compact) */}
+            <div className="px-4 py-2 border-t border-slate-100 bg-white shrink-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <div className="flex flex-col gap-2">
+                    {/* Timer & Progress */}
+                    <div className="flex items-end justify-between mb-1">
+                        <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Remaining</span>
+                        <span className="text-2xl font-mono font-bold text-slate-800 leading-none">
+                            {formatTime(exerciseTimeLeft)}
+                        </span>
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-2">
+                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1">
                         <div
                             className="h-full bg-emerald-500 transition-all duration-1000 ease-linear"
                             style={{ width: `${(exerciseTimeLeft / (exercise.duration || 60)) * 100}%` }}
@@ -270,54 +338,50 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
                     </div>
 
                     {/* Action Buttons Row 1: Skip & Extend */}
-                    <div className="flex gap-2 w-full">
-                        <button
-                            onClick={selectRandomExercise}
-                            className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 py-2.5 rounded-lg font-bold flex items-center justify-center gap-1 transition-colors shadow-sm active:scale-95 transform whitespace-nowrap text-sm"
-                        >
-                            <SkipForward size={14} /> Skip
-                        </button>
+                    <div className="grid grid-cols-2 gap-3 mb-1">
+                        <div className="flex flex-col gap-0.5">
+                            <button
+                                onClick={selectRandomExercise}
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all active:scale-95"
+                            >
+                                <SkipForward size={18} />
+                                Skip
+                            </button>
+                            <span className="text-[10px] text-slate-400 text-center font-medium">Choose another exercise if needed</span>
+                        </div>
 
-                        <button
-                            onClick={extendTimer}
-                            className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 py-2.5 rounded-lg font-bold flex items-center justify-center gap-1 transition-colors shadow-sm active:scale-95 transform whitespace-nowrap text-sm"
-                            title="Extend for 1 minute"
-                        >
-                            +1m
-                        </button>
+                        <div className="flex flex-col gap-0.5">
+                            <button
+                                onClick={extendTimer}
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all active:scale-95"
+                            >
+                                <Clock size={18} />
+                                +1min
+                            </button>
+                            <span className="text-[10px] text-slate-400 text-center font-medium">Only if you need it</span>
+                        </div>
                     </div>
 
                     {/* Action Buttons Row 2: Done/Finish */}
                     <button
                         onClick={finishSession}
-                        className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 transform whitespace-nowrap ${sessionTimeLeft <= 0
+                        className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 text-sm ${sessionTimeLeft <= 0
                             ? 'bg-emerald-600 hover:bg-emerald-700 text-white animate-pulse'
-                            : 'bg-slate-800 hover:bg-slate-700 text-white/90'
+                            : 'bg-slate-800 hover:bg-slate-700 text-white/95'
                             }`}
                     >
-                        <CheckCircle size={20} />
+                        <CheckCircle size={16} />
                         {sessionTimeLeft <= 0 ? 'Finish Break' : 'I am Done Early'}
                     </button>
-                </div>
-            </div>
-            {/* Footer */}
-            <div className="flex justify-between items-center w-full px-4 mb-4">
-                <button
-                    onClick={finishSession}
-                    className="text-gray-400 hover:text-white text-xs flex items-center gap-1 transition-colors"
-                >
-                    Quit to Dashboard
-                </button>
-            </div>
 
-            {/* Debug Info */}
-            <div className="w-full px-4 pb-2">
-                <details className="text-[10px] text-gray-500 cursor-pointer">
-                    <summary>Debug Info</summary>
-                    <pre className="mt-1 whitespace-pre-wrap bg-gray-900/50 p-2 rounded border border-gray-700">
-                        {debugLog}
-                    </pre>
-                </details>
+                    {/* Quit Link - Zero Spacing */}
+                    <button
+                        onClick={finishSession}
+                        className="w-full py-1 text-xs text-slate-400 font-medium hover:text-slate-600 transition-colors -mt-1"
+                    >
+                        Quit to Dashboard
+                    </button>
+                </div>
             </div>
         </div>
     );
