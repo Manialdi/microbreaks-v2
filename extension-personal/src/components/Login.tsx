@@ -75,8 +75,19 @@ export default function Login() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-6">
-            <div className="w-full max-w-sm bg-white/10 backdrop-blur-lg border border-white/20 rounded-3xl p-8 shadow-2xl">
+        <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-6 relative overflow-hidden">
+            {/* Top Right Help Button */}
+            <a
+                href="https://www.micro-breaks.com/individual/help"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 rounded-full text-sm font-medium transition-all group z-50 hover:scale-105 active:scale-95"
+            >
+                <HelpCircle size={16} className="text-white/80 group-hover:text-white" />
+                <span className="text-white/80 group-hover:text-white">Help</span>
+            </a>
+
+            <div className="w-full max-w-sm bg-white/10 backdrop-blur-lg border border-white/20 rounded-3xl p-8 shadow-2xl relative z-10">
                 <div className="flex flex-col items-center mb-8">
                     <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg overflow-hidden border-4 border-white/50">
                         <img src={logo} alt="Microbreaks Logo" className="w-full h-full object-cover" />
@@ -153,18 +164,6 @@ export default function Login() {
                     >
                         {resetLoading ? 'Sending email...' : 'Forgot Password?'}
                     </button>
-
-                    <div className="pt-4 border-t border-white/10 mt-4 flex justify-center">
-                        <a
-                            href="https://www.micro-breaks.com/individual/help"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-xs text-indigo-100/70 hover:text-white transition-colors"
-                        >
-                            <HelpCircle size={14} />
-                            <span>Need Help?</span>
-                        </a>
-                    </div>
                 </form>
             </div>
         </div>
