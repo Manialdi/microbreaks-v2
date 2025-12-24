@@ -75,16 +75,16 @@ export default function Login() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-6 relative overflow-hidden">
-            {/* Top Right Help Button */}
+        <div className="flex flex-col items-center justify-center min-h-screen w-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-6 relative overflow-hidden">
+            {/* Top Right Help Button - Fixed to Viewport */}
             <a
                 href="https://www.micro-breaks.com/individual/help"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 rounded-full text-sm font-medium transition-all group z-50 hover:scale-105 active:scale-95"
+                className="fixed top-4 right-4 flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 rounded-full text-xs font-medium transition-all group z-[100] hover:scale-105 active:scale-95 shadow-lg"
             >
-                <HelpCircle size={16} className="text-white/80 group-hover:text-white" />
-                <span className="text-white/80 group-hover:text-white">Help</span>
+                <HelpCircle size={14} className="text-white/90 group-hover:text-white" />
+                <span className="text-white/90 group-hover:text-white">Help</span>
             </a>
 
             <div className="w-full max-w-sm bg-white/10 backdrop-blur-lg border border-white/20 rounded-3xl p-8 shadow-2xl relative z-10">
