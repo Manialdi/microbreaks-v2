@@ -8,7 +8,7 @@ import { ChevronDown } from "lucide-react"
 
 export function MarketingHeader() {
     const pathname = usePathname();
-    const isIndividual = pathname === '/individual';
+    const isIndividual = pathname?.startsWith('/individual');
 
     return (
         <header className="fixed w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-100">
