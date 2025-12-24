@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { MarketingHeader } from "@/components/marketing/MarketingHeader"
 
 export default function IndividualLayout({
     children,
@@ -8,7 +7,7 @@ export default function IndividualLayout({
 }) {
     return (
         <div className="flex min-h-screen flex-col bg-white">
-            <MarketingHeader />
+
             <main className="flex-1 pt-32">
                 {children}
             </main>

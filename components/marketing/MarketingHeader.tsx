@@ -27,7 +27,7 @@ export function MarketingHeader() {
                 </Link>
 
                 {/* Center: Navigation - Hidden on Individual Page */}
-                {!isIndividual && (
+                {!isIndividual ? (
                     <nav className="hidden md:flex items-center space-x-12">
                         {/* Product Dropdown */}
                         <div className="relative group">
@@ -54,6 +54,14 @@ export function MarketingHeader() {
                         <Link href="/pricing" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">
                             Pricing
                         </Link>
+                    </nav>
+                ) : (
+                    /* Simple Navigation for Individual Page */
+                    <nav className="hidden md:flex items-center space-x-8">
+                        <Link href="/individual/pricing" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Pricing</Link>
+                        <Link href="/individual/terms" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Terms</Link>
+                        <Link href="/individual/privacy" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Privacy</Link>
+                        <Link href="/individual/refund-policy" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Refund Link</Link>
                     </nav>
                 )}
 
