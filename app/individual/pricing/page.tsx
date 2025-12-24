@@ -10,7 +10,7 @@ export const metadata = {
 export default function IndividualPricingPage() {
     return (
         <div className="container mx-auto px-4 py-12 max-w-4xl">
-            <div className="text-center mb-16">
+            <div className="text-center mb-8">
                 <h1 className="text-4xl font-bold text-slate-900 mb-4">Simple, Transparent Pricing</h1>
                 <p className="text-xl text-slate-600">Invest once in a healthier workday - forever.</p>
             </div>
@@ -19,7 +19,7 @@ export default function IndividualPricingPage() {
                 <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
                     Best Value
                 </div>
-                <div className="p-8 text-center border-b border-slate-100">
+                <div className="px-8 py-6 text-center border-b border-slate-100">
                     <h3 className="text-lg font-semibold text-slate-900 mb-2">Lifetime Access</h3>
                     <div className="flex justify-center items-baseline mb-4">
                         <span className="text-lg text-slate-400 line-through mr-2">$199</span>
@@ -37,7 +37,7 @@ export default function IndividualPricingPage() {
                         Turn your routine into a permanent habit
                     </p>
                 </div>
-                <div className="p-8 bg-slate-50">
+                <div className="px-8 py-6 bg-slate-50">
                     <ul className="space-y-4">
                         {[
                             "Unlimited Smart Micro-Breaks",
