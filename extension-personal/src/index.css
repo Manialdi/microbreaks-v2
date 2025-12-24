@@ -1,9 +1,15 @@
 @import "tailwindcss";
 
 body {
-  width: 400px;
-  height: 600px;
-  /* Fixed size for popup */
+  width: 100%;
+  min-width: 350px;
+  min-height: 100vh;
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+font-family: 'Inter',
+system-ui,
+-apple-system,
+sans-serif;
 }
