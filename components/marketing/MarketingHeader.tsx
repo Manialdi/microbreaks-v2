@@ -57,11 +57,11 @@ export function MarketingHeader() {
                     </nav>
                 ) : (
                     /* Simple Navigation for Individual Page */
-                    <nav className="hidden md:flex items-center space-x-8">
-                        <Link href="/individual/pricing" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Pricing</Link>
-                        <Link href="/individual/terms" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Terms</Link>
-                        <Link href="/individual/privacy" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Privacy</Link>
-                        <Link href="/individual/refund-policy" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Refund Link</Link>
+                    <nav className="hidden md:flex items-center space-x-12">
+                        <Link href="/individual/pricing" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">Pricing</Link>
+                        <Link href="/individual/terms" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">Terms</Link>
+                        <Link href="/individual/privacy" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">Privacy</Link>
+                        <Link href="/individual/refund-policy" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">Refund policy</Link>
                     </nav>
                 )}
 
@@ -83,9 +83,13 @@ export function MarketingHeader() {
                         </div>
                     )}
 
-                    {!isIndividual && (
+                    {!isIndividual ? (
                         <Link href="/individual" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">
                             Individual
+                        </Link>
+                    ) : (
+                        <Link href="/individual/help" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">
+                            Help
                         </Link>
                     )}
                 </div>
