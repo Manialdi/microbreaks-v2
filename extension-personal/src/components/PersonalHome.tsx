@@ -82,14 +82,21 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
             }
             if (res.stats) setStats(res.stats as any);
 
-            if (res.installDate) {
-                const now = Date.now();
-                const diff = now - (res.installDate as number);
-                const daysUsed = diff / (1000 * 60 * 60 * 24);
-                setDaysRemaining(Math.max(0, Math.ceil(7 - daysUsed)));
-            } else {
-                setDaysRemaining(7);
+            // Trial Logic: Prioritize Account Creation Date, fallback to Install Date
+            let startDate = res.installDate as number;
+
+            if (user?.created_at) {
+                startDate = new Date(user.created_at).getTime();
+            } else if (!startDate) {
+                // If neither exists (first run anon), set installDate
+                startDate = Date.now();
+                chrome.storage.local.set({ installDate: startDate });
             }
+
+            const now = Date.now();
+            const diff = now - startDate;
+            const daysUsed = diff / (1000 * 60 * 60 * 24);
+            setDaysRemaining(Math.max(0, Math.ceil(7 - daysUsed)));
         });
 
         const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
