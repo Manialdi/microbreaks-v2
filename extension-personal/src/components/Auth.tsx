@@ -267,7 +267,9 @@ export default function Auth() {
                                     fill="#EA4335"
                                 />
                             </svg>
-                            <span className="text-sm">Continue with Google</span>
+                            <span className="text-sm">
+                                {view === 'login' ? 'Sign in with Google' : 'Sign up with Google'}
+                            </span>
                         </button>
 
                         <div className="relative flex items-center">
