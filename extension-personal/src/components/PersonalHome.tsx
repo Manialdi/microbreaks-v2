@@ -65,11 +65,15 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
         return history.filter(d => new Date(d).toDateString() === today).length;
     };
 
+    const [isPro, setIsPro] = useState(false);
+
     // Load Data
     useEffect(() => {
         // supabase.auth.getUser() handled by parent
 
-        chrome.storage.local.get(['settings', 'stats', 'installDate'], (res) => {
+        chrome.storage.local.get(['settings', 'stats', 'installDate', 'is_pro'], (res) => {
+            if (res.is_pro) setIsPro(true);
+
             if (res.settings) {
                 // Merge saved settings with defaults to ensure new keys (like break_duration_minutes) exist
                 const saved = res.settings as any;
@@ -145,7 +149,7 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
     };
 
     const isTrialExpired = daysRemaining !== null && daysRemaining <= 0;
-    const isPro = false;
+    // isPro is now a state variable
     const isLocked = isTrialExpired && !isPro;
 
     return (

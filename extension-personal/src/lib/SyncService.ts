@@ -45,6 +45,18 @@ export const SyncService = {
         // The current schema has `personal_logs` which takes a duration.
         // Strategy: We will calculate 'unsynced_seconds' and push that as a new log.
 
+        // Sync Profile Data (is_pro status)
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_pro')
+            .eq('id', user.id)
+            .single();
+
+        if (profile) {
+            console.log(`[Sync] Updated Profile Status: Pro=${profile.is_pro}`);
+            await chrome.storage.local.set({ is_pro: profile.is_pro });
+        }
+
         const { last_synced_seconds } = (await chrome.storage.local.get(['last_synced_seconds'])) as any;
         const synced = last_synced_seconds || 0;
         const currentTotal = stats.total_seconds || 0;
