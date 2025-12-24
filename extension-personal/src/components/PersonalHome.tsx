@@ -131,6 +131,9 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
 
 
     const handleLogout = async () => {
+        // Clear user-specific data from local storage
+        // We keep 'installDate' (device trial) and 'rememberedEmail' (convenience)
+        await chrome.storage.local.remove(['settings', 'stats', 'isBreakActive']);
         await supabase.auth.signOut();
     };
 

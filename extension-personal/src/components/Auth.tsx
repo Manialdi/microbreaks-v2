@@ -172,12 +172,25 @@ export default function Auth() {
                     if (!accessToken) throw new Error("No access token found");
 
                     // 4. Set Session in Supabase
-                    const { error: sessionError } = await supabase.auth.setSession({
+                    const { data: { user }, error: sessionError } = await supabase.auth.setSession({
                         access_token: accessToken,
                         refresh_token: refreshToken || '',
                     });
 
                     if (sessionError) throw sessionError;
+
+                    // 5. Trigger Welcome Email (Fire and Forget)
+                    if (user) {
+                        fetch('https://www.micro-breaks.com/api/auth/google-welcome', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                userId: user.id,
+                                email: user.email,
+                                fullName: user.user_metadata?.full_name || user.user_metadata?.name
+                            })
+                        }).catch(console.error); // Don't block UI on email
+                    }
 
                     // Success! App.tsx will redirect.
                 } catch (err: any) {
