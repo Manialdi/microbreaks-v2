@@ -46,7 +46,7 @@ export default function TermsPage() {
                     <p>
                         Micro-breaks may be used without charge with limited functionality. At any time, you may choose to upgrade to a paid plan,
                         which grants lifetime access to premium features. This upgrade is a one-time payment and does not involve subscriptions
-                        or recurring charges. Choosing not to upgrade does not prevent continued access to available free features.
+                        or recurring charges.
                     </p>
                 </section>
 
@@ -148,7 +148,7 @@ export default function TermsPage() {
                     <h3 className="text-xl font-semibold text-slate-900 mb-3">16. Governing Law</h3>
                     <p>
                         These Terms are governed by the laws of India, without regard to conflict-of-law principles. Any disputes shall be subject to the
-                        exclusive jurisdiction of the courts in that jurisdiction.
+                        exclusive jurisdiction of the courts located in India.
                     </p>
                 </section>
 
