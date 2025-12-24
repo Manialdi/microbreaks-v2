@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Loader2, Mail, Lock, User, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowRight, ArrowLeft, HelpCircle } from 'lucide-react';
 
 type AuthView = 'login' | 'signup' | 'forgot_password';
 
@@ -132,8 +132,21 @@ export default function Auth() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-white p-6 font-sans">
+        <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 text-white p-6 font-sans relative">
+
+            {/* Top Right Help Button - Fixed to Viewport */}
+            <a
+                href="https://www.micro-breaks.com/individual/help"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="fixed top-4 right-4 flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/10 rounded-full text-xs font-medium transition-all group z-[100] hover:scale-105 active:scale-95 shadow-lg cursor-pointer"
+            >
+                <HelpCircle size={14} className="text-white/90 group-hover:text-white" />
+                <span className="text-white/90 group-hover:text-white">Help</span>
+            </a>
+
             <div className="w-full max-w-sm bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+
 
                 {/* Header */}
                 <div className="flex flex-col items-center mb-6">
