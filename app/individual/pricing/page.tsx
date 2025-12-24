@@ -12,7 +12,7 @@ export default function IndividualPricingPage() {
         <div className="container mx-auto px-4 py-12 max-w-4xl">
             <div className="text-center mb-16">
                 <h1 className="text-4xl font-bold text-slate-900 mb-4">Simple, Transparent Pricing</h1>
-                <p className="text-xl text-slate-600">Invest once in a healthier workday — forever.</p>
+                <p className="text-xl text-slate-600">Invest once in a healthier workday - forever.</p>
             </div>
 
             <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden relative">
