@@ -81,40 +81,28 @@ export function MarketingHeader() {
 
                 {/* Right Navigation */}
                 <div className="flex items-center space-x-8">
-                    {/* Business/Default State: HR Actions */}
+                    {/* Business State: Direct HR Links */}
                     {!isGateway && !isIndividual && (
-                        <div className="relative group">
-                            <button className="flex items-center space-x-2 text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors py-4">
-                                <span>Business</span>
-                                <ChevronDown size={20} className="group-hover:rotate-180 transition-transform duration-200" />
-                            </button>
-                            <div className="absolute top-full right-0 w-56 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
-                                <div className="bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden py-2">
-                                    <Link href="/login" className="block px-6 py-4 text-base text-slate-600 hover:text-blue-600 hover:bg-slate-50">HR Portal</Link>
-                                    <Link href="/hr/signup" className="block px-6 py-4 text-base text-slate-600 hover:text-blue-600 hover:bg-slate-50">Create Account</Link>
-                                </div>
-                            </div>
-                        </div>
+                        <>
+                            <Link href="/login" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">
+                                HR Portal
+                            </Link>
+                            <Link href="/hr/signup" className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm text-base">
+                                Create Account
+                            </Link>
+                        </>
                     )}
 
-                    {/* Individual State: Help */}
+                    {/* Individual State: Help + Business Link */}
                     {isIndividual && (
-                        <Link href="/individual/help" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">
-                            Help
-                        </Link>
-                    )}
-
-                    {/* Gateway State: Empty Right Side (Or Optional Login) */}
-                    {isGateway && null}
-
-                    {/* Link to Swap Contexts (Visible on non-gateway pages) */}
-                    {!isGateway && (
-                        <Link
-                            href={isIndividual ? "/business" : "/individual"}
-                            className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors"
-                        >
-                            {isIndividual ? "Business" : "Individual"}
-                        </Link>
+                        <>
+                            <Link href="/individual/help" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">
+                                Help
+                            </Link>
+                            <Link href="/business" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">
+                                Business
+                            </Link>
+                        </>
                     )}
                 </div>
             </div>
