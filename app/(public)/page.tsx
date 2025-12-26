@@ -6,8 +6,8 @@ import { Users, User, ArrowRight } from "lucide-react"
 
 export default function GatewayPage() {
     return (
-        <div className="min-h-screen bg-gradient-to-b from-blue-50/50 to-white flex items-center justify-center p-4">
-            <div className="max-w-4xl w-full text-center space-y-12">
+        <div className="min-h-screen bg-gradient-to-b from-blue-50/50 to-white pt-16 pb-12 px-4">
+            <div className="max-w-4xl w-full mx-auto text-center space-y-12">
                 <div className="space-y-4">
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight">
                         Micro-breaks for <span className="text-blue-600">Everyone</span>
