@@ -93,16 +93,11 @@ export function MarketingHeader() {
                         </>
                     )}
 
-                    {/* Individual State: Help + Business Link */}
+                    {/* Individual State: Help Only */}
                     {isIndividual && (
-                        <>
-                            <Link href="/individual/help" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">
-                                Help
-                            </Link>
-                            <Link href="/business" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">
-                                Business
-                            </Link>
-                        </>
+                        <Link href="/individual/help" className="text-lg font-medium text-slate-600 hover:text-blue-600 transition-colors">
+                            Help
+                        </Link>
                     )}
                 </div>
             </div>
