@@ -139,8 +139,16 @@ chrome.runtime.onInstalled.addListener(() => {
     }, 3000);
 });
 
-chrome.alarms.onAlarm.addListener((alarm) => {
+chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === ALARM_NAME) {
+        // 0. Check for Active Session first
+        // If user is logged out, suppress everything
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+            console.log("No active session. Notification suppressed.");
+            return;
+        }
+
         // Check for trial expiration AND Schedule Validity before showing notification
         chrome.storage.local.get(['installDate', 'settings'], (res) => {
             const installDate = (res.installDate as number) || Date.now();
