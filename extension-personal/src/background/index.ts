@@ -141,8 +141,8 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === ALARM_NAME) {
-        // Check for trial expiration before showing notification
-        chrome.storage.local.get(['installDate'], (res) => {
+        // Check for trial expiration AND Schedule Validity before showing notification
+        chrome.storage.local.get(['installDate', 'settings'], (res) => {
             const installDate = (res.installDate as number) || Date.now();
             const daysUsed = (Date.now() - installDate) / (1000 * 60 * 60 * 24);
             const isTrialExpired = daysUsed > 7;
@@ -151,6 +151,29 @@ chrome.alarms.onAlarm.addListener((alarm) => {
             if (isTrialExpired) {
                 console.log("Trial expired. Notification suppressed.");
                 return;
+            }
+
+            // Check Schedule (Day & Time)
+            const settings = res.settings;
+            if (settings) {
+                const now = new Date();
+                const currentDay = now.getDay();
+                const currentHour = now.getHours();
+
+                // 1. Check Day
+                if (settings.work_days && !settings.work_days.includes(currentDay)) {
+                    console.log(`Suppressed: Today (${currentDay}) is not in work days:`, settings.work_days);
+                    return;
+                }
+
+                // 2. Check Time
+                // Note: start_hour is inclusive, end_hour is exclusive (e.g. 9 to 17 means runs until 16:59)
+                if (settings.start_hour !== undefined && settings.end_hour !== undefined) {
+                    if (currentHour < settings.start_hour || currentHour >= settings.end_hour) {
+                        console.log(`Suppressed: Current hour ${currentHour} is outside ${settings.start_hour}-${settings.end_hour}`);
+                        return;
+                    }
+                }
             }
 
             chrome.notifications.create({
