@@ -3,6 +3,8 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { Users, User, ArrowRight } from "lucide-react"
 
 export default function GatewayPage() {
     const router = useRouter();
