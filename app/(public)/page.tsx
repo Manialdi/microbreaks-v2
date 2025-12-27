@@ -1,10 +1,28 @@
 
 "use client";
 
-import Link from "next/link"
-import { Users, User, ArrowRight } from "lucide-react"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function GatewayPage() {
+    const router = useRouter();
+
+    useEffect(() => {
+        // Handle Supabase Auth Redirects
+        if (typeof window !== 'undefined' && window.location.hash) {
+            const hash = window.location.hash;
+
+            // Employee Invite / Password Reset / OAuth Callback
+            if (hash.includes('type=recovery') || hash.includes('type=invite') || hash.includes('access_token')) {
+                // Determine if this is likely an employee flow or generic
+                // For now, restoring original behavior to redirect to employee onboarding
+                // This catches the "stuck" state, though Personal Extension users should ideally
+                // configure their Supabase Redirect URL to avoid hitting this page at all.
+                router.replace(`/employee/onboarding${hash}`);
+            }
+        }
+    }, [router]);
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50/50 to-white pt-16 pb-12 px-4">
             <div className="max-w-4xl w-full mx-auto text-center space-y-12">
