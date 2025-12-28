@@ -38,12 +38,12 @@ export default function IndividualPage() {
 
                             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                                 <Link href="https://chromewebstore.google.com/detail/microbreaks-personal/gmdpcildfnehopafflccogmhmichoppa" target="_blank" className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-blue-600 rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 ring-4 ring-transparent hover:ring-blue-100">
-                                    <Download size={20} className="mr-2" /> Download Now
+                                    <Download size={20} className="mr-2" /> Get the Extension
                                 </Link>
                                 {/* Secondary CTA removed as requested */}
                             </div>
                             <p className="text-xs text-slate-400 mt-4 font-medium uppercase tracking-wide">
-                                Chrome Extension • Free Trial for 7 Days
+                                Free Trial for 7 Days
                             </p>
                         </div>
 
