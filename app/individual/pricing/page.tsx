@@ -16,6 +16,9 @@ export default function IndividualPricingPage() {
             </div>
 
             <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden relative">
+                <div className="absolute top-5 -left-12 w-48 bg-yellow-400 text-slate-900 text-xs font-bold py-1.5 -rotate-45 text-center shadow-lg uppercase tracking-wider z-10">
+                    Limited Time
+                </div>
                 <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
                     Best Value
                 </div>
