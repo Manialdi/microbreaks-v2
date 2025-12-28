@@ -29,21 +29,21 @@ export default function IndividualPage() {
                                 <Sparkles size={14} /> New: Lifetime Personal Plan
                             </span>
                             <h1 className="text-4xl lg:text-6xl font-black text-slate-900 mb-6 tracking-tight leading-tight">
-                                Feel Better, Work Better <br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">One 2-Minute Break at a Time</span>
+                                Build a Healthier Workday <br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">One Break at a Time</span>
                             </h1>
                             <p className="text-lg text-slate-600 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                                Reduce neck pain, eye strain, and mental fatigue - all from your browser.
+                                Micro-Breaks fits into your workday with timely reminders and quick guided exercises - no thinking, no planning.
                             </p>
 
                             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                                <Link href="https://chromewebstore.google.com/detail/micro-breaks/..." target="_blank" className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-blue-600 rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 ring-4 ring-transparent hover:ring-blue-100">
+                                <Link href="https://chromewebstore.google.com/detail/microbreaks-personal/gmdpcildfnehopafflccogmhmichoppa" target="_blank" className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white bg-blue-600 rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 ring-4 ring-transparent hover:ring-blue-100">
                                     <Download size={20} className="mr-2" /> Download Now
                                 </Link>
                                 {/* Secondary CTA removed as requested */}
                             </div>
                             <p className="text-xs text-slate-400 mt-4 font-medium uppercase tracking-wide">
-                                Chrome Extension • Free Trial Available
+                                Chrome Extension • Free Trial for 7 Days
                             </p>
                         </div>
 
