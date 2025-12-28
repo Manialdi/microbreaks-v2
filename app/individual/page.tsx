@@ -126,7 +126,7 @@ export default function IndividualPage() {
                                     <Download size={32} className="text-blue-600" />
                                 </div>
                                 <h4 className="font-bold text-slate-900 mb-1">Install Extension</h4>
-                                <span className="text-sm text-slate-500">Add to Chrome</span>
+                                <span className="text-sm text-slate-500">Add to browser</span>
                             </div>
 
                             {/* Step 2 */}
@@ -135,7 +135,7 @@ export default function IndividualPage() {
                                     <Settings size={32} className="text-blue-600" />
                                 </div>
                                 <h4 className="font-bold text-slate-900 mb-1">Set Schedule</h4>
-                                <span className="text-sm text-slate-500">Pick your hours</span>
+                                <span className="text-sm text-slate-500">Customize your routine</span>
                             </div>
 
                             {/* Step 3 */}
@@ -143,7 +143,7 @@ export default function IndividualPage() {
                                 <div className="w-24 h-24 bg-white border-4 border-slate-50 rounded-full flex items-center justify-center shadow-sm mb-6">
                                     <Bell size={32} className="text-blue-600" />
                                 </div>
-                                <h4 className="font-bold text-slate-900 mb-1">Get Nudged</h4>
+                                <h4 className="font-bold text-slate-900 mb-1">Get Nudges</h4>
                                 <span className="text-sm text-slate-500">Gentle reminders</span>
                             </div>
 
@@ -152,8 +152,8 @@ export default function IndividualPage() {
                                 <div className="w-24 h-24 bg-white border-4 border-slate-50 rounded-full flex items-center justify-center shadow-sm mb-6">
                                     <PlayCircle size={32} className="text-blue-600" />
                                 </div>
-                                <h4 className="font-bold text-slate-900 mb-1">Move</h4>
-                                <span className="text-sm text-slate-500">Follow along</span>
+                                <h4 className="font-bold text-slate-900 mb-1">Take a Break</h4>
+                                <span className="text-sm text-slate-500">Guided exercises</span>
                             </div>
 
                             {/* Step 5 */}
