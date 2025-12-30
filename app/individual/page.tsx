@@ -20,7 +20,7 @@ import {
 import { useState, useRef } from "react";
 
 export default function IndividualPage() {
-    const [isMuted, setIsMuted] = useState(true);
+    const [isMuted, setIsMuted] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
 
     const toggleMute = () => {
@@ -63,7 +63,7 @@ export default function IndividualPage() {
 
                         {/* Right: Video Demo */}
                         <div className="relative order-first lg:order-last">
-                            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200 bg-slate-900 aspect-video transform rotate-1 hover:rotate-0 transition-transform duration-500">
+                            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200 bg-slate-900 aspect-video">
                                 <video
                                     ref={videoRef}
                                     src="/videos/website-video-for-individuals-hero-section.mp4"
