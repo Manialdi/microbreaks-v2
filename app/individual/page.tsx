@@ -51,7 +51,7 @@ export default function IndividualPage() {
                         <div className="relative order-first lg:order-last">
                             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200 bg-slate-900 aspect-video transform rotate-1 hover:rotate-0 transition-transform duration-500">
                                 <video
-                                    src="/videos/chin-tucks-v1.webm"
+                                    src="/videos/website-video-for-individuals-hero-section.mp4"
                                     autoPlay
                                     loop
                                     muted
@@ -60,7 +60,7 @@ export default function IndividualPage() {
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
                                 <div className="absolute bottom-4 left-4 text-white text-sm font-medium bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">
-                                    Exercise Demo: Chin Tucks
+                                    Product Demo
                                 </div>
                             </div>
                             {/* Decorative Blob */}

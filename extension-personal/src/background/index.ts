@@ -162,7 +162,12 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
             }
 
             // Check Schedule (Day & Time)
-            const settings = res.settings;
+            const settings = res.settings as {
+                work_interval_minutes: number;
+                start_hour: number;
+                end_hour: number;
+                work_days: number[];
+            };
             if (settings) {
                 const now = new Date();
                 const currentDay = now.getDay();
