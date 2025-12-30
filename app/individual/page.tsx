@@ -12,10 +12,24 @@ import {
     Smile,
     Feather,
     Repeat,
-    ArrowRight
+
+    ArrowRight,
+    Volume2,
+    VolumeX
 } from "lucide-react";
+import { useState, useRef } from "react";
 
 export default function IndividualPage() {
+    const [isMuted, setIsMuted] = useState(true);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    const toggleMute = () => {
+        if (videoRef.current) {
+            videoRef.current.muted = !isMuted;
+            setIsMuted(!isMuted);
+        }
+    };
+
     return (
         <div className="bg-white min-h-screen">
             {/* Hero Section */}
@@ -51,10 +65,11 @@ export default function IndividualPage() {
                         <div className="relative order-first lg:order-last">
                             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200 bg-slate-900 aspect-video transform rotate-1 hover:rotate-0 transition-transform duration-500">
                                 <video
+                                    ref={videoRef}
                                     src="/videos/website-video-for-individuals-hero-section.mp4"
                                     autoPlay
                                     loop
-                                    muted
+                                    muted={isMuted}
                                     playsInline
                                     className="w-full h-full object-cover opacity-90"
                                 />
@@ -62,6 +77,13 @@ export default function IndividualPage() {
                                 <div className="absolute bottom-4 left-4 text-white text-sm font-medium bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">
                                     Product Demo
                                 </div>
+                                <button
+                                    onClick={toggleMute}
+                                    className="absolute bottom-4 right-4 text-white bg-black/50 p-2 rounded-full backdrop-blur-sm hover:bg-black/70 transition-colors z-20"
+                                    aria-label={isMuted ? "Unmute video" : "Mute video"}
+                                >
+                                    {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                                </button>
                             </div>
                             {/* Decorative Blob */}
                             <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-100/50 blur-3xl rounded-full"></div>
