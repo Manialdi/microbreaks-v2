@@ -39,10 +39,10 @@ const BENEFITS_MAP: Record<string, string[]> = {
 
 export default function ExercisePlayer({ onComplete }: { onComplete: () => void }) {
     const [exercise, setExercise] = useState<Exercise | null>(null);
-    const [sessionTimeLeft, setSessionTimeLeft] = useState(300); // Total session time (default 5m)
+    const [sessionTimeLeft, setSessionTimeLeft] = useState(120); // Default 2 mins (120s)
     const [exerciseTimeLeft, setExerciseTimeLeft] = useState(60); // Current exercise timer
     const [isActive, setIsActive] = useState(false);
-    const [durationDisplay, setDurationDisplay] = useState(5);
+    const [durationDisplay, setDurationDisplay] = useState(2);
     const [debugLog, setDebugLog] = useState<string>("Initializing...");
     const [isMuted, setIsMuted] = useState(false);
 
@@ -66,8 +66,12 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
         chrome.storage.local.get(['settings'], (res) => {
             const s = res.settings as any;
             if (s?.break_duration_minutes) {
-                setDurationDisplay(s.break_duration_minutes);
-                setSessionTimeLeft(s.break_duration_minutes * 60);
+                const duration = Number(s.break_duration_minutes);
+                setDurationDisplay(duration);
+                setSessionTimeLeft(duration * 60);
+                setDebugLog(prev => prev + `\nLoaded Duration: ${duration}m`);
+            } else {
+                setDebugLog(prev => prev + `\nNo duration found, using default 2m`);
             }
         });
 

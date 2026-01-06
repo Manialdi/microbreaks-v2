@@ -48,6 +48,12 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
                 const saved = res.settings as any;
                 const merged = { ...settings, ...saved };
                 if (!merged.break_duration_minutes) merged.break_duration_minutes = 2;
+
+                // Ensure work_days are numbers
+                if (merged.work_days && Array.isArray(merged.work_days)) {
+                    merged.work_days = merged.work_days.map((d: any) => Number(d));
+                }
+
                 // Enforce default M-F if invalid/empty
                 if (!merged.work_days || merged.work_days.length === 0) {
                     merged.work_days = [1, 2, 3, 4, 5];

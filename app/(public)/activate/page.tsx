@@ -124,7 +124,7 @@ function ActivateContent() {
             if (empUpdateError) console.warn("Failed to activate employee record", empUpdateError);
 
             // Success Redirect
-            router.push('/dashboard'); // Or maybe download prompt?
+            router.push('/welcome-employee');
             // Since they are regular employees, maybe they shouldn't go to HR Dashboard?
             // But for now, user asked to redirect to dashboard or just 'activate'.
             // If this app is HR Portal ONLY, regular employees might not have access to '/dashboard'.

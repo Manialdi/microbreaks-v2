@@ -22,6 +22,18 @@ export default async function AppLayout({
         redirect('/login')
     }
 
+    // Check if user is HR (has profile)
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+    if (!profile) {
+        // If not HR (no profile), they are likely an employee -> Redirect to extension download
+        redirect('/welcome-employee');
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 font-sans">
             {/* Top Navigation Bar */}
