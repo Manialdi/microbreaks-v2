@@ -25,6 +25,9 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 setUser(user);
+                // Trigger Sync on Mount (Force check for new user/company defaults)
+                chrome.runtime.sendMessage({ action: 'SYNC_SETTINGS' });
+
                 // Fetch Employee ID & Stats
                 const { data: emp } = await supabase
                     .from('employees')
@@ -58,6 +61,7 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
         const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
             if (areaName === 'local' && changes.settings?.newValue) {
                 setSettings(changes.settings.newValue as any);
+                setDraftSettings(changes.settings.newValue as any);
             }
         };
         chrome.storage.onChanged.addListener(listener);
@@ -126,7 +130,7 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
     };
 
     const saveSettings = () => {
-        const newSettings = { ...draftSettings, user_override: true };
+        const newSettings = { ...draftSettings, user_override: true, userId: user?.id };
         setSettings(newSettings);
         chrome.storage.local.set({ settings: newSettings });
         chrome.runtime.sendMessage({ action: 'UPDATE_ALARMS', settings: newSettings });

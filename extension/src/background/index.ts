@@ -26,6 +26,7 @@ interface Settings {
     end_hour: number;
     work_days: number[];
     user_override?: boolean;
+    userId?: string;
 }
 
 async function scheduleNextAlarm() {
@@ -174,16 +175,30 @@ async function syncCompanySettings() {
             // Check for local overrides first
             const { settings: localSettings } = await chrome.storage.local.get(['settings']);
 
-            if (localSettings && (localSettings as Settings).user_override) {
+            const currentSettings = localSettings as Settings;
+            // Check if settings belong to the current logged-in user
+            const isSameUser = currentSettings && currentSettings.userId === user.id;
+
+            if (isSameUser && currentSettings.user_override) {
                 console.log("Skipping sync: User has overridden settings locally.");
                 // Only update metadata, preserve user settings
                 await chrome.storage.local.set({ companyId: companyId });
             } else {
+                // New user or no override or mismatch -> Apply Company Defaults
+                const newSettings: Settings = {
+                    work_interval_minutes: settings.work_interval_minutes,
+                    start_hour: settings.start_hour,
+                    end_hour: settings.end_hour,
+                    work_days: settings.work_days || [1, 2, 3, 4, 5],
+                    userId: user.id, // Bind to current user
+                    user_override: false
+                };
+
                 await chrome.storage.local.set({
-                    settings: settings,
+                    settings: newSettings,
                     companyId: companyId
                 });
-                console.log("Settings Synced (Company Defaults):", settings);
+                console.log("Settings Synced (Company Defaults):", newSettings);
             }
 
             // Trigger Scheduler

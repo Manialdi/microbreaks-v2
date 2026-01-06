@@ -64,8 +64,11 @@ export default function SettingsPage() {
                         setBreakDuration(settings.break_duration_minutes || 2);
                         setStartHour(settings.start_hour ?? 9);
                         setEndHour(settings.end_hour ?? 17);
-                        if (settings.work_days && settings.work_days.length > 0) {
-                            setWorkDays(settings.work_days);
+                        if (settings.work_days && Array.isArray(settings.work_days) && settings.work_days.length > 0) {
+                            setWorkDays(settings.work_days.map((d: any) => Number(d)));
+                        } else {
+                            // Default to M-F if nothing saved
+                            setWorkDays([1, 2, 3, 4, 5]);
                         }
                     }
                 }
