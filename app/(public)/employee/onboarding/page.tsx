@@ -235,7 +235,7 @@ export default function EmployeeOnboardingPage() {
             // Redirect to App (or extension download)
             // router.push("/dashboard"); // Or extension landing
             // For now, go to a success state or dashboard
-            router.push("/dashboard");
+            router.push("/welcome-employee");
 
         } catch (err: any) {
             console.error(err);

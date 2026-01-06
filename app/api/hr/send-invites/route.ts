@@ -66,7 +66,9 @@ export async function POST(req: NextRequest) {
 
         const results = [];
 
-        for (const email of emails) {
+        for (const rawEmail of emails) {
+            const email = rawEmail.toLowerCase().trim();
+
             // A. Domain Validation
             if (companyDomain && !email.endsWith(`@${companyDomain}`)) {
                 results.push({ email, status: 'error', message: `Email must end with @${companyDomain}` });
@@ -75,12 +77,10 @@ export async function POST(req: NextRequest) {
 
             try {
                 // Generate Invite Link (Magic Link)
-                // This creates (or gets) the user and returns a link to verifying their email/logging in.
                 const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
                     type: 'invite',
                     email: email,
                     options: {
-                        // Redirect to the known working onboarding page
                         redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/employee/onboarding`
                     }
                 });
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
                 }
 
                 const actionLink = linkData.properties.action_link;
-                const authUserId = linkData.user.id; // User is created if not exists
+                const authUserId = linkData.user.id;
 
                 // C. Send Invited Email
                 const { error: emailError } = await resend.emails.send({
@@ -107,33 +107,48 @@ export async function POST(req: NextRequest) {
                     continue;
                 }
 
-
                 // D. Upsert Employee Record
                 if (authUserId) {
-                    const { data: existingEmps } = await supabaseAdmin
+                    // Check by Auth ID first (Strongest link), then by Email
+                    let existingEmp = null;
+
+                    const { data: byAuth } = await supabaseAdmin
                         .from('employees')
                         .select('id')
-                        .eq('email', email)
-                        .limit(1);
+                        .eq('auth_user_id', authUserId)
+                        .maybeSingle();
 
-                    const existingEmp = existingEmps?.[0];
+                    existingEmp = byAuth;
+
+                    if (!existingEmp) {
+                        const { data: byEmail } = await supabaseAdmin
+                            .from('employees')
+                            .select('id')
+                            .eq('email', email)
+                            .maybeSingle();
+                        existingEmp = byEmail;
+                    }
 
                     if (existingEmp) {
+                        console.log(`Updating existing employee ${existingEmp.id} to invited status`);
                         await supabaseAdmin
                             .from('employees')
                             .update({
                                 company_id: companyId,
-                                status: 'active', // Mark active immediately as they have password
-                                auth_user_id: authUserId
+                                email: email, // ensure email matches
+                                status: 'invited',
+                                auth_user_id: authUserId,
+                                last_active_at: null // Reset activity if re-inviting
                             })
                             .eq('id', existingEmp.id);
                     } else {
+                        console.log(`Inserting new employee ${email} as invited`);
                         await supabaseAdmin
                             .from('employees')
                             .insert({
                                 company_id: companyId,
                                 email: email,
-                                status: 'active',
+                                status: 'invited',
                                 auth_user_id: authUserId
                             });
                     }
@@ -153,7 +168,7 @@ export async function POST(req: NextRequest) {
                         .from('invitations')
                         .update({
                             company_id: companyId,
-                            status: 'accepted', // Auto-accepted technically
+                            status: 'pending',
                             updated_at: new Date().toISOString()
                         })
                         .eq('id', existingInvite.id);
@@ -163,7 +178,7 @@ export async function POST(req: NextRequest) {
                         .insert({
                             company_id: companyId,
                             email: email,
-                            status: 'accepted',
+                            status: 'pending',
                             token: crypto.randomUUID(), // Legacy field
                             activation_token: crypto.randomUUID() // Legacy field
                         });

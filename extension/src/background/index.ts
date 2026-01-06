@@ -22,12 +22,38 @@ const NOTIFICATION_ID = 'MICROBREAK_NOTIFICATION';
 
 interface Settings {
     work_interval_minutes: number;
+    break_duration_minutes?: number;
     start_hour: number;
     end_hour: number;
     work_days: number[];
     user_override?: boolean;
     userId?: string;
 }
+
+// Helper to sanitize work days to 0-6 (Sun-Sat)
+const parseWorkDays = (raw: any): number[] => {
+    if (!Array.isArray(raw)) return [1, 2, 3, 4, 5]; // Default M-F
+
+    return raw.map(d => {
+        if (typeof d === 'number') return d;
+        if (typeof d === 'string') {
+            // Try number parse
+            const num = parseInt(d);
+            if (!isNaN(num)) return num;
+
+            // Try day name match
+            const lower = d.toLowerCase();
+            if (lower.startsWith('sun')) return 0;
+            if (lower.startsWith('mon')) return 1;
+            if (lower.startsWith('tue')) return 2;
+            if (lower.startsWith('wed')) return 3;
+            if (lower.startsWith('thu')) return 4;
+            if (lower.startsWith('fri')) return 5;
+            if (lower.startsWith('sat')) return 6;
+        }
+        return -1;
+    }).filter(d => d >= 0 && d <= 6);
+};
 
 async function scheduleNextAlarm() {
     // 1. Get Settings
@@ -185,11 +211,14 @@ async function syncCompanySettings() {
                 await chrome.storage.local.set({ companyId: companyId });
             } else {
                 // New user or no override or mismatch -> Apply Company Defaults
+                const safeWorkDays = parseWorkDays(settings.work_days);
+
                 const newSettings: Settings = {
-                    work_interval_minutes: settings.work_interval_minutes,
-                    start_hour: settings.start_hour,
-                    end_hour: settings.end_hour,
-                    work_days: settings.work_days || [1, 2, 3, 4, 5],
+                    work_interval_minutes: settings.work_interval_minutes || 60,
+                    break_duration_minutes: settings.break_duration_minutes || 2,
+                    start_hour: settings.start_hour ?? 9,
+                    end_hour: settings.end_hour ?? 17,
+                    work_days: safeWorkDays.length > 0 ? safeWorkDays : [1, 2, 3, 4, 5],
                     userId: user.id, // Bind to current user
                     user_override: false
                 };

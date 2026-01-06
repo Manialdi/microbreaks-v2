@@ -40,25 +40,21 @@ export async function POST(req: NextRequest) {
         const supabaseAdmin = createAdminClient(supabaseUrl, serviceRoleKey);
 
         // 3. Get Employee Details (to get Auth ID)
-        const { data: employee, error: fetchError } = await supabaseAdmin
+        const { data: employee } = await supabaseAdmin
             .from('employees')
             .select('auth_user_id, email')
             .eq('id', employeeId)
-            .single();
+            .maybeSingle();
 
-        if (fetchError || !employee) {
-            console.log("Employee not found, maybe already deleted?", fetchError);
-            // Proceed to just try deleting by ID if exists?
-        }
-
-        // 4. Delete DB Record (Cascade should handle Break Logs etc, but we delete explicitly to be sure)
+        // 4. Delete DB Record (Employees)
         const { error: deleteError } = await supabaseAdmin
             .from('employees')
             .delete()
             .eq('id', employeeId);
 
         if (deleteError) {
-            throw new Error(deleteError.message);
+            console.error("Failed to delete employee record:", deleteError);
+            throw new Error("Failed to remove employee from directory.");
         }
 
         // 5. Delete from Invitations
@@ -69,14 +65,19 @@ export async function POST(req: NextRequest) {
                 .eq('email', employee.email);
         }
 
-        // 6. Delete Auth User (Revoke Access)
+        // 6. Delete Auth User (Revoke Access completely)
+        // This is crucial to prevent "Zombie" users that auto-link on re-invite
         if (employee?.auth_user_id) {
             const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(
                 employee.auth_user_id
             );
+
             if (authDeleteError) {
                 console.error("Failed to delete auth user:", authDeleteError);
-                // We don't fail the request, as DB record is gone, access is effectively revoked from app Logic.
+                // We proceed, but warn. This might happen if user has other dependencies.
+                // However, since we deleted the 'employees' record, they effectively lose access.
+            } else {
+                console.log(`Auth user ${employee.auth_user_id} deleted successfully.`);
             }
         }
 
