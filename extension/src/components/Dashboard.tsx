@@ -1,36 +1,31 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Flame, Play, LogOut, Clock, Calendar, Moon, Sun } from 'lucide-react';
-
-// Helper: 18:00:00 -> 6:00 PM
-const formatTime = (timeStr: string) => {
-    if (!timeStr) return '--:--';
-    const [h, m] = timeStr.split(':').map(Number);
-    const period = h >= 12 ? 'PM' : 'AM';
-    const hours = h % 12 || 12;
-    const minutes = m < 10 ? `0${m}` : m;
-    return `${hours}:${minutes} ${period}`;
-};
+import { Play, LogOut, Clock, Calendar, CheckCircle, Save, Flame, Activity, HelpCircle } from 'lucide-react';
 
 export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }) {
-    const [nextBreak, setNextBreak] = useState<number | string>('--');
-    const [statusMessage, setStatusMessage] = useState('Next break in');
-    const [frequency, setFrequency] = useState(60);
-    const [workStart, setWorkStart] = useState('09:00:00');
-    const [workEnd, setWorkEnd] = useState('17:00:00');
-    const [stats, setStats] = useState({ goal: 8, current: 0, streak: 5 });
-    const [userEmail, setUserEmail] = useState('');
+    const [user, setUser] = useState<any>(null);
+    const [settings, setSettings] = useState({
+        work_interval_minutes: 60,
+        break_duration_minutes: 2,
+        start_hour: 9,
+        end_hour: 17,
+        work_days: [1, 2, 3, 4, 5]
+    });
 
-    // State for user context
-    const [employeeId, setEmployeeId] = useState<string | null>(null);
+    // Draft settings for form inputs
+    const [draftSettings, setDraftSettings] = useState(settings);
+    const [isSaved, setIsSaved] = useState(false);
 
+    // Stats State
+    const [stats, setStats] = useState({ current: 0, streak: 0 });
+
+    // 1. Initialize User & Stats
     useEffect(() => {
-        // 1. Fetch User & Employee ID
         const initUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-                setUserEmail(user.email || '');
-                // Fetch Employee ID
+                setUser(user);
+                // Fetch Employee ID & Stats
                 const { data: emp } = await supabase
                     .from('employees')
                     .select('id')
@@ -38,50 +33,38 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
                     .single();
 
                 if (emp) {
-                    setEmployeeId(emp.id);
                     fetchStats(emp.id);
                 }
             }
         };
         initUser();
 
-        const updateStateFromSettings = (settings: any) => {
-            if (!settings) return;
-
-            // Map Integers (9, 17) to Strings ("09:00:00", "17:00:00")
-            const sHour = settings.start_hour !== undefined ? settings.start_hour : 9;
-            const eHour = settings.end_hour !== undefined ? settings.end_hour : 17;
-
-            const newStart = `${sHour.toString().padStart(2, '0')}:00:00`;
-            const newEnd = `${eHour.toString().padStart(2, '0')}:00:00`;
-
-            setFrequency(settings.work_interval_minutes || 60);
-            setWorkStart(newStart);
-            setWorkEnd(newEnd);
-            calculateGoal(newStart, newEnd, settings.work_interval_minutes);
-        };
-
-        // 2. Initial Read
+        // Load Settings from Storage
         chrome.storage.local.get(['settings'], (res) => {
             if (res.settings) {
-                updateStateFromSettings(res.settings);
+                const saved = res.settings as any;
+                const merged = { ...settings, ...saved };
+                if (!merged.break_duration_minutes) merged.break_duration_minutes = 2;
+                // Enforce default M-F if invalid/empty
+                if (!merged.work_days || merged.work_days.length === 0) {
+                    merged.work_days = [1, 2, 3, 4, 5];
+                }
+                setSettings(merged);
+                setDraftSettings(merged);
             }
         });
 
-        // 3. Update Listener
-        const storageListener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+        // Listen for Settings Changes
+        const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
             if (areaName === 'local' && changes.settings?.newValue) {
-                updateStateFromSettings(changes.settings.newValue);
+                setSettings(changes.settings.newValue as any);
             }
         };
-        chrome.storage.onChanged.addListener(storageListener);
-
-        return () => {
-            chrome.storage.onChanged.removeListener(storageListener);
-        };
+        chrome.storage.onChanged.addListener(listener);
+        return () => chrome.storage.onChanged.removeListener(listener);
     }, []);
 
-    // Fetch Real Stats from Supabase
+    // 2. Fetch Stats Logic
     const fetchStats = async (empId: string) => {
         try {
             const { data: logs } = await supabase
@@ -92,225 +75,249 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
 
             if (!logs) return;
 
-            // 1. Sessions Today
+            // Sessions Today
             const todayStr = new Date().toISOString().split('T')[0];
             const todayCount = logs.filter(l => l.completed_at.startsWith(todayStr)).length;
 
-            // 2. Streak Calculation
+            // Streak Calculation
             const dates = new Set(logs.map(l => l.completed_at.split('T')[0]));
+            const uniqueDates = [...dates].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
             let streak = 0;
-            let checkDate = new Date(); // Start Today
+            if (uniqueDates.length > 0) {
+                const today = new Date().toDateString();
+                const yesterday = new Date(Date.now() - 86400000).toDateString();
+                const lastDate = new Date(uniqueDates[0]).toDateString();
 
-            // Check Today (if active, count it. if not, check yesterday)
-            // Actually, streak usually means "consecutive days ending today or yesterday"
-            const todayKey = checkDate.toISOString().split('T')[0];
-
-            if (dates.has(todayKey)) {
-                streak++;
-                checkDate.setDate(checkDate.getDate() - 1);
-            } else {
-                // If not done today, check yesterday to confirm if streak is alive
-                checkDate.setDate(checkDate.getDate() - 1);
-                if (!dates.has(checkDate.toISOString().split('T')[0])) {
-                    checkDate = null as any;
-                }
-            }
-
-            if (checkDate) {
-                while (true) {
-                    const dStr = checkDate.toISOString().split('T')[0];
-                    if (dates.has(dStr)) {
-                        streak++;
-                        checkDate.setDate(checkDate.getDate() - 1);
-                    } else {
-                        break;
+                // If last break was today or yesterday, streak is alive
+                if (lastDate === today || lastDate === yesterday) {
+                    streak = 1;
+                    let currentDate = new Date(uniqueDates[0]);
+                    for (let i = 1; i < uniqueDates.length; i++) {
+                        const prevDate = new Date(uniqueDates[i]);
+                        const diffTime = Math.abs(currentDate.getTime() - prevDate.getTime());
+                        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                        if (diffDays === 1) {
+                            streak++;
+                            currentDate = prevDate;
+                        } else break;
                     }
                 }
             }
 
-            setStats(prev => ({ ...prev, current: todayCount, streak }));
-
+            setStats({ current: todayCount, streak });
         } catch (e) {
             console.error("Failed to fetch stats", e);
         }
     };
 
-    // 4. Timer Logic (Separate Effect to depend on workStart/End)
-    useEffect(() => {
-        const checkStatus = () => {
-            const now = new Date();
-            const currentMins = now.getHours() * 60 + now.getMinutes();
+    // 3. UI Helpers
+    const updateDraft = (key: string, value: any) => {
+        setDraftSettings(prev => ({ ...prev, [key]: value }));
+        setIsSaved(false);
+    };
 
-            // Parse Work Hours
-            const [sh, sm] = workStart.split(':').map(Number);
-            const [eh, em] = workEnd.split(':').map(Number);
-            const startMins = sh * 60 + sm;
-            const endMins = eh * 60 + em;
+    const toggleDay = (dayIndex: number) => {
+        const currentDays = draftSettings.work_days || [];
+        const newDays = currentDays.includes(dayIndex)
+            ? currentDays.filter((d: number) => d !== dayIndex)
+            : [...currentDays, dayIndex].sort();
+        updateDraft('work_days', newDays);
+    };
 
-            const isOvernight = startMins > endMins;
-            let isWorking = false;
-            let isBeforeStart = false;
-            let isAfterEnd = false;
+    const saveSettings = () => {
+        const newSettings = { ...draftSettings, user_override: true };
+        setSettings(newSettings);
+        chrome.storage.local.set({ settings: newSettings });
+        chrome.runtime.sendMessage({ action: 'UPDATE_ALARMS', settings: newSettings });
 
-            if (isOvernight) {
-                // Overnight Shift (e.g. 18:00 to 02:00)
-                // Working if: >= 18:00 OR < 02:00
-                isWorking = currentMins >= startMins || currentMins < endMins;
-
-                // Keep "Before Start" simple: if between end and start
-                if (!isWorking) {
-                    // Ideally check which one is closer, but simple logic:
-                    setStatusMessage(`See you tomorrow! 🌙`);
-                }
-            } else {
-                // Standard Day (e.g. 09:00 to 17:00)
-                isWorking = currentMins >= startMins && currentMins < endMins;
-                isBeforeStart = currentMins < startMins;
-                isAfterEnd = currentMins >= endMins;
-            }
-
-            if (isWorking) {
-                // During Work - Check Alarm
-                setStatusMessage('Next break in');
-                chrome.alarms.get('MICROBREAK_ALARM', (alarm) => {
-                    if (alarm) {
-                        // Check if alarm is strictly for today's session
-                        // Complex for overnight: check if alarm > "end time relative to now"
-                        // Simplified: Just show the countdown if it exists.
-                        const diffMs = alarm.scheduledTime - Date.now();
-                        const diffMins = Math.ceil(diffMs / 60000);
-                        setNextBreak(diffMins > 0 ? diffMins : 0);
-                    } else {
-                        // Fallback
-                        setNextBreak(frequency);
-                    }
-                });
-            } else {
-                // Not Working
-                setNextBreak('--');
-                if (isBeforeStart) {
-                    setStatusMessage(`Starts at ${formatTime(workStart)} ☀️`);
-                } else {
-                    setStatusMessage('See you tomorrow! 🌙');
-                }
-            }
-        };
-
-        checkStatus();
-        const interval = setInterval(checkStatus, 30000); // Check every 30s
-        return () => clearInterval(interval);
-
-    }, [workStart, workEnd, frequency]);
-
-    const calculateGoal = (start: string, end: string, freq: number) => {
-        if (!start || !end || !freq) return;
-        const [sh, sm] = start.split(':').map(Number);
-        const [eh, em] = end.split(':').map(Number);
-        const startMins = sh * 60 + sm;
-        const endMins = eh * 60 + em;
-        const durationMins = endMins - startMins;
-        if (durationMins > 0) {
-            setStats(prev => ({ ...prev, goal: Math.floor(durationMins / freq) }));
-        }
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 2000);
     };
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
+        // Force reload usually handled by parent listening to auth state
     };
 
     return (
         <div className="h-full bg-gray-50 flex flex-col relative overflow-hidden text-gray-800 font-sans">
             {/* Header */}
-            <div className="relative z-10 flex justify-between items-center p-6 pb-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md">
+            <div className="relative z-10 flex justify-between items-center p-6 pb-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center">
-                        <span className="font-bold">M</span>
+                    <div className="w-8 h-8 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center overflow-hidden">
+                        {/* Use simple text or generic icon if assets missing */}
+                        <span className="font-bold text-lg">M</span>
                     </div>
-                    <h1 className="text-lg font-bold tracking-tight">Microbreaks</h1>
+                    <div>
+                        <h1 className="text-lg font-bold tracking-tight leading-none">
+                            Dashboard - {user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'User'}
+                        </h1>
+                        <span className="text-[10px] font-medium bg-white/20 px-1.5 py-0.5 rounded text-white/90">
+                            Company Plan
+                        </span>
+                        <p className="text-[10px] text-blue-100 italic mt-1 opacity-80">"Healthy employees, healthy business"</p>
+                    </div>
                 </div>
-                <button onClick={handleLogout} className="p-2 hover:bg-white/20 rounded-full transition-all text-white/90 hover:text-white" title="Log Out">
-                    <LogOut className="h-4 w-4" />
-                </button>
+
+                <div className="flex flex-col items-end gap-1">
+                    <button onClick={handleLogout} className="flex items-center gap-1.5 p-1.5 hover:bg-white/10 rounded-lg transition-all text-white/90 hover:text-white group" title="Log Out">
+                        <span className="text-[10px] text-blue-100 italic opacity-80 group-hover:opacity-100 transition-opacity">Logout</span>
+                        <LogOut className="h-4 w-4" />
+                    </button>
+                    <a
+                        href="#"
+                        className="flex items-center gap-1 text-[10px] text-blue-100 hover:text-white transition-colors opacity-80 hover:opacity-100 pr-1.5"
+                    >
+                        <HelpCircle size={12} />
+                        Help
+                    </a>
+                </div>
             </div>
 
-            <div className="relative z-0 flex-1 overflow-y-auto px-6 py-6 space-y-6">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-20">
 
-                {/* 1. Take a Break Now (Top) */}
+                {/* Start Button */}
                 <button
                     onClick={onStartBreak}
-                    className="w-full group relative overflow-hidden bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20 py-4 rounded-2xl font-bold transition transform active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full group relative overflow-hidden text-white shadow-lg py-4 rounded-2xl font-bold transition transform flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 shadow-blue-500/20 active:scale-[0.98] cursor-pointer"
                 >
-                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                    <Play className="h-5 w-5 fill-white relative z-10" />
-                    <span className="relative z-10">Take a Break Now</span>
+                    <Play className="h-5 w-5 fill-white" />
+                    <span>Start Micro-break</span>
                 </button>
 
-                {/* 2. Timer Card */}
-                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center min-h-[160px]">
-                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">{statusMessage}</p>
-
-                    {nextBreak !== '--' ? (
-                        <>
-                            <div className="text-7xl font-black text-gray-800 flex justify-center items-baseline">
-                                {nextBreak}<span className="text-2xl font-bold ml-2 text-gray-300">min</span>
-                            </div>
-                            <div className="mt-2 flex justify-center text-xs text-gray-400">
-                                Based on {frequency}m frequency
-                            </div>
-                        </>
-                    ) : (
-                        <div className="py-2">
-                            {statusMessage.includes('tomorrow') ?
-                                <Moon className="h-10 w-10 text-indigo-400 mx-auto" /> :
-                                <Sun className="h-10 w-10 text-amber-400 mx-auto" />
-                            }
-                            <p className="text-sm text-gray-500 mt-2 font-medium">Relax and recharge.</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* 3. Stats Row (Side by Side) */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                        <p className="text-xs text-gray-400 font-bold uppercase mb-1">Daily Goal</p>
-                        <div className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                            {stats.current} <span className="text-gray-300">/</span> {stats.goal}
-                        </div>
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 text-center">
+                        <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 flex items-center justify-center gap-1">
+                            <Activity size={10} /> Today's Breaks
+                        </p>
+                        <div className="text-base font-black text-gray-800">{stats.current}</div>
+                        <p className="text-[9px] text-gray-400 mt-0.5 font-medium">Keep moving!</p>
                     </div>
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                        <p className="text-xs text-gray-400 font-bold uppercase mb-1">Streak</p>
-                        <div className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                            {stats.streak} <Flame className="h-5 w-5 text-orange-500 fill-orange-500" />
-                        </div>
-                        <p className="text-[10px] text-gray-400 mt-1">days on fire!</p>
+                    <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 text-center">
+                        <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 flex items-center justify-center gap-1">
+                            <Flame size={10} className="text-orange-500" /> Streak
+                        </p>
+                        <div className="text-base font-black text-gray-800">{stats.streak} <span className="text-[9px] font-medium text-gray-400">days</span></div>
+                        <p className="text-[9px] text-gray-400 mt-0.5 font-medium">Consistency matters</p>
                     </div>
                 </div>
 
-                {/* 4. Settings Section (Read-Only) */}
-                <div className="border-t border-gray-100 pt-4">
-                    <h3 className="text-sm font-bold text-gray-900 mb-3">Focus Settings (Managed by HR)</h3>
+                {/* HR Settings Card */}
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 className="text-xs font-bold text-gray-900 mb-2 flex items-center gap-2">
+                        <Calendar size={14} /> HR Settings
+                    </h3>
 
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-4 opacity-80">
-                        <div className="flex items-center justify-between">
-                            <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-                                <Clock className="h-3 w-3" /> Frequency
-                            </label>
-                            <span className="text-sm font-bold text-gray-800 bg-gray-50 px-3 py-1 rounded-lg">
-                                {frequency} mins
-                            </span>
+                    {/* Days */}
+                    <div className="flex justify-between mb-4">
+                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => toggleDay(idx)}
+                                className={`w-8 h-8 rounded-full text-xs font-bold transition-colors ${draftSettings.work_days?.includes(idx)
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                                    }`}
+                            >
+                                {day}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Hours */}
+                    <div className="flex items-center gap-2 mb-3">
+                        <div className="flex-1">
+                            <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Start</label>
+                            <select
+                                value={draftSettings.start_hour}
+                                onChange={(e) => updateDraft('start_hour', parseInt(e.target.value))}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg text-xs px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                {Array.from({ length: 24 }).map((_, i) => (
+                                    <option key={i} value={i}>{i}:00</option>
+                                ))}
+                            </select>
                         </div>
-                        <hr className="border-gray-50" />
-                        <div className="flex items-center justify-between">
-                            <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-                                <Calendar className="h-3 w-3" /> Work Hours
-                            </label>
-                            <span className="text-sm font-bold text-gray-800 bg-gray-50 px-3 py-1 rounded-lg">
-                                {formatTime(workStart)} - {formatTime(workEnd)}
-                            </span>
+                        <div className="text-gray-300">-</div>
+                        <div className="flex-1">
+                            <label className="text-[10px] text-gray-400 font-bold uppercase block mb-1">End</label>
+                            <select
+                                value={draftSettings.end_hour}
+                                onChange={(e) => updateDraft('end_hour', parseInt(e.target.value))}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg text-xs px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                {Array.from({ length: 24 }).map((_, i) => (
+                                    <option key={i} value={i}>{i}:00</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
+
+                    <h3 className="text-xs font-bold text-gray-900 mb-2 flex items-center gap-2">
+                        <Clock size={14} /> Micro-Break Duration
+                    </h3>
+                    <div className="flex justify-between gap-2 mb-3">
+                        {[2, 5].map((m) => (
+                            <button
+                                key={m}
+                                onClick={() => updateDraft('break_duration_minutes', m)}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${draftSettings.break_duration_minutes === m
+                                    ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-500 shadow-sm'
+                                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                                    }`}
+                            >
+                                {m} mins
+                                {draftSettings.break_duration_minutes === m && (
+                                    <CheckCircle size={14} className="text-emerald-500" />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+
+                    <h3 className="text-xs font-bold text-gray-900 mb-2 flex items-center gap-2">
+                        <Clock size={14} /> Frequency (mins)
+                    </h3>
+                    <div className="mb-3">
+                        <input
+                            type="range"
+                            min="0"
+                            max="5"
+                            step="1"
+                            value={[15, 30, 45, 60, 90, 120].indexOf(draftSettings.work_interval_minutes) !== -1
+                                ? [15, 30, 45, 60, 90, 120].indexOf(draftSettings.work_interval_minutes)
+                                : 3}
+                            onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                const options = [15, 30, 45, 60, 90, 120];
+                                updateDraft('work_interval_minutes', options[val]);
+                            }}
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        />
+                        <div className="flex justify-between text-[10px] text-gray-400 font-bold uppercase mt-2 px-1">
+                            <span>15</span>
+                            <span>30</span>
+                            <span>45</span>
+                            <span>60</span>
+                            <span>90</span>
+                            <span>120</span>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={saveSettings}
+                        className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${isSaved
+                            ? 'bg-green-100 text-green-700 ring-2 ring-green-500/20'
+                            : 'bg-slate-800 text-white hover:bg-slate-900 shadow-lg shadow-slate-500/20 active:scale-[0.98]'
+                            }`}
+                    >
+                        {isSaved ? <CheckCircle size={14} /> : <Save size={14} />}
+                        {isSaved ? 'Schedule Saved!' : 'Save Schedule'}
+                    </button>
                 </div>
+
             </div>
-        </div>
+        </div >
     );
 }

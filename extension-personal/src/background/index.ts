@@ -14,20 +14,46 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
     },
 });
 
-const ALARM_NAME = 'MICROBREAK_ALARM';
+const ALARM_SCHEDULER = 'MICROBREAK_SCHEDULER';
+const ALARM_SNOOZE = 'MICROBREAK_SNOOZE';
+const NOTIFICATION_ID = 'MICROBREAK_NOTIFICATION';
 
 import { SyncService } from '../lib/SyncService';
 
 // Initialize Sync Service
 SyncService.init();
 
-// Log Logic
-// ... (Logic moved to SyncService)
+// --- Core Scheduling Logic ---
 
-// 2. Alarm Logic
-function updateAlarms(intervalMinutes: number, startHour: number = 9, endHour: number = 17, workDays: number[] = [1, 2, 3, 4, 5]) {
-    chrome.alarms.clear(ALARM_NAME);
+// Define Settings Interface
+interface Settings {
+    work_interval_minutes: number;
+    start_hour: number;
+    end_hour: number;
+    work_days: number[];
+}
 
+async function scheduleNextAlarm() {
+    // 1. Get Settings
+    const { settings } = await chrome.storage.local.get(['settings']);
+
+    const defaultSettings: Settings = {
+        work_interval_minutes: 30,
+        start_hour: 9,
+        end_hour: 17,
+        work_days: [1, 2, 3, 4, 5]
+    };
+
+    // Default fallback if no settings found
+    // Cast settings to 'any' first if needed, then to Settings, or rely on the union
+    const s = (settings as Settings) || defaultSettings;
+
+    const intervalMinutes = s.work_interval_minutes;
+    const startHour = s.start_hour;
+    const endHour = s.end_hour;
+    const workDays = s.work_days;
+
+    // 2. Calculate Next Target Time
     const now = new Date();
     let targetTime = new Date();
 
@@ -35,201 +61,243 @@ function updateAlarms(intervalMinutes: number, startHour: number = 9, endHour: n
     const getNextStart = (fromDate: Date): Date => {
         let d = new Date(fromDate);
         d.setHours(startHour, 0, 0, 0);
-        // If the proposed start time is in the past (e.g. today 9am when it's 10am), handled by caller logic
-        // But here we seek the *next* day logic usually.
 
-        // Loop up to 7 days to find next work day
+        // Loop up to 8 days to find next work day
         for (let i = 0; i < 8; i++) {
-            // If i=0, we are checking today.
             if (workDays.includes(d.getDay())) {
                 return d;
             }
             d.setDate(d.getDate() + 1);
         }
-        return d; // Should match
+        return d;
     };
 
-    // Current Status
     const currentHour = now.getHours();
     const isWorkDay = workDays.includes(now.getDay());
 
-    // Case 1: Active Work Time
-    // Today is workday AND we are between start/end
-    if (isWorkDay && currentHour >= startHour && currentHour < endHour) {
-        // Schedule next break in 'interval' mins
-        targetTime = new Date(now.getTime() + intervalMinutes * 60000);
+    // START OF SHIFT CALCULATION
+    let startOfToday = new Date(now);
 
-        // Cap at end hour
-        const todayEnd = new Date();
-        todayEnd.setHours(endHour, 0, 0, 0);
+    // Check for overnight shift logic (e.g. 6 PM start, currently 2 AM)
+    if (startHour > endHour && currentHour < endHour) {
+        startOfToday.setDate(startOfToday.getDate() - 1);
+    }
+    startOfToday.setHours(startHour, 0, 0, 0);
 
-        if (targetTime >= todayEnd) {
-            // Push to next day
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            targetTime = getNextStart(tomorrow);
-        }
-    }
-    // Case 2: Before Start on Work Day
-    else if (isWorkDay && currentHour < startHour) {
-        targetTime = new Date();
-        targetTime.setHours(startHour, 0, 0, 0);
-    }
-    // Case 3: After End OR Non-Work Day
-    else {
-        // Find next day
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        targetTime = getNextStart(tomorrow);
+    const diffMs = now.getTime() - startOfToday.getTime();
+
+    // Case 2: Before Start
+    if (diffMs < 0) {
+        targetTime = new Date(startOfToday);
+    } else {
+        // Case 1: Within Shift (or assumed)
+        let nextSlotIndex = Math.floor((diffMs / 60000) / intervalMinutes) + 1;
+        targetTime = new Date(startOfToday.getTime() + nextSlotIndex * intervalMinutes * 60000);
     }
 
-    // Safety: ensure target is in future
-    if (targetTime <= now) {
-        targetTime = new Date(now.getTime() + intervalMinutes * 60000);
+    // LIMIT CHECK (End of Shift)
+    const limitTime = new Date(startOfToday);
+    limitTime.setHours(endHour, 0, 0, 0);
+    if (startHour > endHour) {
+        limitTime.setDate(limitTime.getDate() + 1);
     }
 
-    chrome.alarms.create(ALARM_NAME, {
-        when: targetTime.getTime(),
-        periodInMinutes: intervalMinutes
-        // Note: periodInMinutes will keep firing at this interval indefinitely.
-        // It does NOT respect the "End Hour" automatically for subsequent firings.
-        // For strict schedule compliance, we should use `when` (one-time) and reset it on each alarm.
-        // But for simplicity in MV3, letting it repeat is okay, provided the alarm listener checks the time.
-        // BETTER: The alarm listener checks "Is this within valid hours?". If not, it snoozes to next morning.
+    if (targetTime >= limitTime) {
+        // Shift Ended -> Find Next Day
+        const nextDayCandidate = new Date(startOfToday);
+        nextDayCandidate.setDate(nextDayCandidate.getDate() + 1);
+        targetTime = getNextStart(nextDayCandidate);
+    } else if (!isWorkDay && diffMs >= 0) {
+        // Today is not a workday, find next start
+        const nextDayCandidate = new Date(now);
+        nextDayCandidate.setDate(nextDayCandidate.getDate() + 1);
+        targetTime = getNextStart(nextDayCandidate);
+    }
+
+    // SAFETY: Ensure STRICTLY Future
+    // Instead of looping, calculate mathematical offset directly.
+    if (targetTime.getTime() <= now.getTime()) {
+        const diff = now.getTime() - targetTime.getTime();
+        const intervalsNeeded = Math.floor(diff / (intervalMinutes * 60000)) + 1;
+        targetTime = new Date(targetTime.getTime() + intervalsNeeded * intervalMinutes * 60000);
+    }
+
+    // 3. Set One-Shot Alarm
+    // Clear existing to avoid duplicates (though create usually overwrites)
+    await chrome.alarms.clear(ALARM_SCHEDULER);
+
+    chrome.alarms.create(ALARM_SCHEDULER, {
+        when: targetTime.getTime()
     });
 
-    console.log(`Alarm set for ${targetTime.toLocaleString()} (Interval: ${intervalMinutes}m)`);
+    console.log(`[Scheduler] Next MICROBREAK at ${targetTime.toLocaleString()} (Interval: ${intervalMinutes}m)`);
 }
 
+// --- Event Listeners ---
+
 chrome.runtime.onInstalled.addListener(() => {
-    console.log("MicroBreaks Personal Installed");
+    console.log("[Background] Installed/Updated");
     chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+
+    // Clear legacy alarms
     chrome.alarms.clearAll();
 
-    // 1. precise Install Date for Trial
+    // Initialize Install Date
     chrome.storage.local.get(['installDate'], (res) => {
         if (!res.installDate) {
             chrome.storage.local.set({ installDate: Date.now() });
         }
     });
 
-    // 2. Default Settings
+    // Default Settings
     const defaultSettings = {
         work_interval_minutes: 30,
         start_hour: 9,
         end_hour: 17,
-        work_days: [1, 2, 3, 4, 5] // Mon-Fri
+        work_days: [1, 2, 3, 4, 5]
     };
-
-    chrome.storage.local.set({ settings: defaultSettings });
-    updateAlarms(30, 9, 17, [1, 2, 3, 4, 5]);
+    chrome.storage.local.get(['settings'], (res) => {
+        if (!res.settings) {
+            chrome.storage.local.set({ settings: defaultSettings });
+        }
+    });
 
     SyncService.syncNow();
+    scheduleNextAlarm();
+});
 
-    // Debugging: Test Notification for Side Panel
-    setTimeout(() => {
-        chrome.notifications.create({
+// Proactive Startup Check (for browser updates/restarts)
+chrome.runtime.onStartup.addListener(() => {
+    console.log("[Background] Startup");
+    scheduleNextAlarm();
+});
+
+function showNotification() {
+    // Clear previous notification to prevent stacking
+    chrome.notifications.clear(NOTIFICATION_ID, () => {
+        chrome.notifications.create(NOTIFICATION_ID, {
             type: 'basic',
             iconUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
-            title: 'Side Panel Test 🧪',
-            message: 'Click this notification to open the Side Panel!',
+            title: 'Time for a MicroBreak! 🧘',
+            message: 'Take 2 minutes to stretch and refresh.',
+            buttons: [
+                { title: 'Start Exercise' },
+                { title: 'Snooze 5m' }
+            ],
             priority: 2,
             requireInteraction: true
         });
-    }, 3000);
-});
+    });
+}
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-    if (alarm.name === ALARM_NAME) {
-        // 0. Check for Active Session first
-        // If user is logged out, suppress everything
+    console.log(`[Alarm Triggered] ${alarm.name}`);
+
+    // HANDLING MAIN SCHEDULER
+    if (alarm.name === ALARM_SCHEDULER) {
+        // 1. Immediately schedule the NEXT one to keep the loop alive
+        // We do this first to ensure continuity even if notification logic fails
+        await scheduleNextAlarm();
+
+        // 2. Logic to Show Notification
+        // Check Session
+        // Debug: Log complete storage to understand why session is missing
+        const storage = await chrome.storage.local.get(null);
+        console.log("[Debug] Storage Keys:", Object.keys(storage));
+
         const { data } = await supabase.auth.getSession();
-        if (!data.session) {
-            console.log("No active session. Notification suppressed.");
+
+        // precise session check fallback
+        // The key usually looks like: sb-<project_ref>-auth-token
+        const hasLocalToken = Object.keys(storage).some(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+
+        if (!data.session && !hasLocalToken) {
+            console.log("No active session (Supabase & Local Token missing). Suppressed.");
             return;
         }
 
-        // Check for trial expiration AND Schedule Validity before showing notification
-        chrome.storage.local.get(['installDate', 'settings'], (res) => {
-            const installDate = (res.installDate as number) || Date.now();
-            const daysUsed = (Date.now() - installDate) / (1000 * 60 * 60 * 24);
-            const isTrialExpired = daysUsed > 7;
+        if (!data.session && hasLocalToken) {
+            console.log("Supabase session missing but Local Token found. Treating as Logged In.");
+        }
 
-            // If trial expired, do NOT show notification
-            if (isTrialExpired) {
-                console.log("Trial expired. Notification suppressed.");
-                return;
-            }
+        // Check Trial
+        const res = await chrome.storage.local.get(['installDate']);
+        const installDate = (res.installDate as number) || Date.now();
+        const daysUsed = (Date.now() - installDate) / (1000 * 60 * 60 * 24);
+        const isTrialExpired = daysUsed > 7;
 
-            // Check Schedule (Day & Time)
-            const settings = res.settings as {
-                work_interval_minutes: number;
-                start_hour: number;
-                end_hour: number;
-                work_days: number[];
-            };
-            if (settings) {
-                const now = new Date();
-                const currentDay = now.getDay();
-                const currentHour = now.getHours();
+        if (isTrialExpired) {
+            console.log("Trial expired. Suppressed.");
+            return;
+        }
 
-                // 1. Check Day
-                if (settings.work_days && !settings.work_days.includes(currentDay)) {
-                    console.log(`Suppressed: Today (${currentDay}) is not in work days:`, settings.work_days);
-                    return;
-                }
+        // Validity Checks (Time/Day) are now effectively handled by the scheduler logic itself!
+        // The scheduler ONLY creates alarms for valid times. 
+        // So if an alarm fires, it IS a valid time (unless settings changed in the interim).
 
-                // 2. Check Time
-                // Note: start_hour is inclusive, end_hour is exclusive (e.g. 9 to 17 means runs until 16:59)
-                if (settings.start_hour !== undefined && settings.end_hour !== undefined) {
-                    if (currentHour < settings.start_hour || currentHour >= settings.end_hour) {
-                        console.log(`Suppressed: Current hour ${currentHour} is outside ${settings.start_hour}-${settings.end_hour}`);
-                        return;
-                    }
-                }
-            }
+        showNotification();
+    }
 
-            chrome.notifications.create({
-                type: 'basic',
-                iconUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
-                title: 'Time for a MicroBreak! 🧘',
-                message: 'Take 2 minutes to stretch and refresh.',
-                buttons: [
-                    { title: 'Start Exercise' },
-                    { title: 'Snooze 5m' }
-                ],
-                priority: 2,
-                requireInteraction: true
-            });
-        });
+    // HANDLING SNOOZE
+    else if (alarm.name === ALARM_SNOOZE) {
+        // Just show notification again
+        showNotification();
     }
 });
 
+
+// Notification Interactions
+chrome.notifications.onClicked.addListener(() => {
+    console.log("Notification Clicked -> Open Panel");
+    chrome.storage.local.set({ isBreakActive: true });
+    openSidePanel();
+});
+
+chrome.notifications.onButtonClicked.addListener((_notificationId: string, buttonIndex: number) => {
+    if (buttonIndex === 0) {
+        // Start
+        console.log("Button: Start");
+        chrome.storage.local.set({ isBreakActive: true });
+        openSidePanel();
+    } else if (buttonIndex === 1) {
+        // Snooze
+        console.log("Button: Snooze 5m");
+        // Create INDEPENDENT snooze alarm. Does NOT affect scheduler.
+        chrome.alarms.create(ALARM_SNOOZE, { delayInMinutes: 5 });
+    }
+});
+
+// Messages
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message.action === 'SYNC_SETTINGS') {
+        SyncService.syncNow();
+        sendResponse({ status: 'sync_started' });
+    }
+    else if (message.action === 'UPDATE_ALARMS') {
+        // Frontend request to refresh schedule (e.g. after save)
+        scheduleNextAlarm();
+        sendResponse({ status: 'scheduled' });
+    }
+});
+
+// --- Window & SidePanel Logic (Unchanged) ---
 let lastWindowId: number | undefined;
 
-// Track the last focused window
 chrome.windows.onFocusChanged.addListener((windowId) => {
     if (windowId !== chrome.windows.WINDOW_ID_NONE) {
         lastWindowId = windowId;
     }
 });
 
-// Initialize logic to capture current window if SW just started
 chrome.windows.getLastFocused({ windowTypes: ['normal'] }).then(win => {
     if (win?.id) lastWindowId = win.id;
 });
 
-// Helper to open side panel
-// Tries to perform the action synchronously if possible to preserve user gesture
 function openSidePanel() {
     if (lastWindowId) {
-        console.log(`Attempting Synchronous Open in window ${lastWindowId}`);
-        // Bring window to front (Fire and forget, doesn't block sidePanel.open)
-        chrome.windows.update(lastWindowId, { focused: true }).catch(err => console.error("Focus failed", err));
-
-        // This is synchronous invocation (fire and forget promise)
+        chrome.windows.update(lastWindowId, { focused: true }).catch(err => console.error(err));
         chrome.sidePanel.open({ windowId: lastWindowId }).catch(err => {
-            console.error("Sync open failed, falling back:", err);
+            console.error("Sync open failed", err);
             openSidePanelFallback();
         });
     } else {
@@ -238,39 +306,5 @@ function openSidePanel() {
 }
 
 async function openSidePanelFallback() {
-    console.log("Attempting Async Fallback (Launcher)...");
-    // Since we lost the user gesture context for sidePanel.open, we open a launcher tab.
-    // chrome.tabs.create usually works even with loose gesture rules or it acts as a popup.
     chrome.tabs.create({ url: 'launcher.html' });
 }
-
-chrome.notifications.onClicked.addListener(() => {
-    console.log("Notification Clicked!");
-    chrome.storage.local.set({ isBreakActive: true });
-    openSidePanel();
-});
-
-chrome.notifications.onButtonClicked.addListener((_notificationId: string, buttonIndex: number) => {
-    if (buttonIndex === 0) {
-        console.log("Button Clicked!");
-        chrome.storage.local.set({ isBreakActive: true });
-        openSidePanel();
-    } else if (buttonIndex === 1) {
-        chrome.alarms.create(ALARM_NAME, { delayInMinutes: 5 });
-    }
-});
-
-// Message from Frontend (e.g. after Login or Settings Change)
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message.action === 'SYNC_SETTINGS') {
-        SyncService.syncNow();
-        sendResponse({ status: 'sync_started' });
-    }
-    else if (message.action === 'UPDATE_ALARMS') {
-        const s = message.settings;
-        if (s) {
-            updateAlarms(s.work_interval_minutes, s.start_hour, s.end_hour, s.work_days);
-            console.log("Alarms updated via frontend message:", s);
-        }
-    }
-});

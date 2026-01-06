@@ -6,13 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
     // 1. Reminder Settings
-    const [breakOption, setBreakOption] = useState("60_2"); // Composite key: work_break
-    const [workStart, setWorkStart] = useState("09:00");
-    const [workEnd, setWorkEnd] = useState("18:00");
-    const [rotationType, setRotationType] = useState("random");
-    const [fixedCategory, setFixedCategory] = useState("neck");
-    const [pauseWeekends, setPauseWeekends] = useState(true);
-    const [pauseHolidays, setPauseHolidays] = useState(true);
+    const [workInterval, setWorkInterval] = useState(60);
+    const [breakDuration, setBreakDuration] = useState(2);
+    const [startHour, setStartHour] = useState(9);
+    const [endHour, setEndHour] = useState(17);
+    const [workDays, setWorkDays] = useState<number[]>([1, 2, 3, 4, 5]);
 
     // 2. Company Settings
     const [companyName, setCompanyName] = useState("");
@@ -62,10 +60,13 @@ export default function SettingsPage() {
                         .single();
 
                     if (settings) {
-                        setBreakOption(`${settings.work_interval_minutes}_${settings.break_duration_minutes}`);
-                        if (settings.start_hour) setWorkStart(`${settings.start_hour.toString().padStart(2, '0')}:00`);
-                        if (settings.end_hour) setWorkEnd(`${settings.end_hour.toString().padStart(2, '0')}:00`);
-                        // For simplicty, assuming defaults for others or ignoring strictly for this task
+                        setWorkInterval(settings.work_interval_minutes || 60);
+                        setBreakDuration(settings.break_duration_minutes || 2);
+                        setStartHour(settings.start_hour ?? 9);
+                        setEndHour(settings.end_hour ?? 17);
+                        if (settings.work_days && settings.work_days.length > 0) {
+                            setWorkDays(settings.work_days);
+                        }
                     }
                 }
             }
@@ -85,10 +86,6 @@ export default function SettingsPage() {
         const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', user.id).single();
         if (!profile?.company_id) return showToast("No company found", 'error');
 
-        const [workInterval, breakDuration] = breakOption.split('_').map(Number);
-        const startHour = parseInt(workStart.split(':')[0]);
-        const endHour = parseInt(workEnd.split(':')[0]);
-
         // Upsert Settings
         const { error } = await supabase
             .from('company_settings')
@@ -98,7 +95,7 @@ export default function SettingsPage() {
                 break_duration_minutes: breakDuration,
                 start_hour: startHour,
                 end_hour: endHour,
-                // work_days: ... (skipped for brevity as per instructions to focus on freq)
+                work_days: workDays
             });
 
         if (error) {
@@ -160,125 +157,115 @@ export default function SettingsPage() {
             <div className="bg-white rounded-xl shadow-sm border p-6 flex flex-col gap-6">
                 <div>
                     <h2 className="text-lg font-bold text-gray-900">Reminder Settings</h2>
-                    <p className="text-sm text-gray-500 mb-4 border-b pb-2">These defaults will apply to all employees unless they override them.</p>
+                    <p className="text-sm text-gray-500 mb-4 border-b pb-2"> These defaults will apply to all employees unless they override them.</p>
 
-                    <div className="space-y-6">
-                        {/* A. Frequency */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-700">Default Break Frequency</label>
-                            <select
-                                className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white max-w-sm"
-                                value={breakOption}
-                                onChange={(e) => setBreakOption(e.target.value)}
-                            >
-                                <option value="60_2">Every 1 Hour (2 min break) - Recommended</option>
-                                <option value="120_5">Every 2 Hours (5 min break)</option>
-                            </select>
-                        </div>
+                    <div className="space-y-6 max-w-lg">
 
-                        {/* B. Workday */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-lg">
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                    <Clock className="h-4 w-4 text-gray-400" /> Workday Start
-                                </label>
-                                <input
-                                    type="time"
-                                    className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={workStart}
-                                    onChange={(e) => setWorkStart(e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                    <Clock className="h-4 w-4 text-gray-400" /> Workday End
-                                </label>
-                                <input
-                                    type="time"
-                                    className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    value={workEnd}
-                                    onChange={(e) => setWorkEnd(e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        {/* C. Rotation */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-700 block">Exercise Category Rotation</label>
-                            <div className="flex flex-col sm:flex-row gap-4 mt-2">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="rotation"
-                                        value="random"
-                                        checked={rotationType === 'random'}
-                                        onChange={() => setRotationType('random')}
-                                        className="text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <span className="text-sm text-gray-900">Randomized (Default)</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="rotation"
-                                        value="fixed"
-                                        checked={rotationType === 'fixed'}
-                                        onChange={() => setRotationType('fixed')}
-                                        className="text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <span className="text-sm text-gray-900">Fixed Category</span>
-                                </label>
-                            </div>
-
-                            {rotationType === 'fixed' && (
-                                <select
-                                    className="mt-2 w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white max-w-sm animate-fade-in"
-                                    value={fixedCategory}
-                                    onChange={(e) => setFixedCategory(e.target.value)}
-                                >
-                                    <option value="neck">Neck mobility</option>
-                                    <option value="wrist">Wrist mobility</option>
-                                    <option value="eye">Eye relaxation</option>
-                                    <option value="posture">Posture</option>
-                                    <option value="breathing">Breathing</option>
-                                </select>
-                            )}
-                        </div>
-
-                        {/* D. Auto-Pausing */}
-                        <div className="space-y-4 pt-2">
-                            <label className="text-sm font-semibold text-gray-700 block">Auto-Pausing Options</label>
-
-                            <div className="flex items-start gap-3">
-                                <input
-                                    type="checkbox"
-                                    id="weekends"
-                                    checked={pauseWeekends}
-                                    onChange={(e) => setPauseWeekends(e.target.checked)}
-                                    className="mt-1 h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                />
-                                <div>
-                                    <label htmlFor="weekends" className="text-sm font-medium text-gray-900 block">Auto-pause on weekends</label>
-                                    <p className="text-xs text-gray-500">No reminders on Saturday and Sunday.</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-3">
-                                <input
-                                    type="checkbox"
-                                    id="holidays"
-                                    checked={pauseHolidays}
-                                    onChange={(e) => setPauseHolidays(e.target.checked)}
-                                    className="mt-1 h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                />
-                                <div>
-                                    <label htmlFor="holidays" className="text-sm font-medium text-gray-900 block">Auto-pause on public holidays</label>
-                                    <button className="text-xs text-blue-600 hover:underline mt-0.5 flex items-center gap-1">
-                                        <Calendar className="h-3 w-3" /> Manage holiday calendar
+                        {/* 1. Work Days */}
+                        <div>
+                            <label className="text-sm font-semibold text-gray-700 block mb-2">Work Days</label>
+                            <div className="flex gap-2">
+                                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => {
+                                            const newDays = workDays.includes(idx)
+                                                ? workDays.filter(d => d !== idx)
+                                                : [...workDays, idx].sort();
+                                            setWorkDays(newDays);
+                                        }}
+                                        className={`w-10 h-10 rounded-full text-sm font-bold transition-colors ${workDays.includes(idx)
+                                            ? 'bg-blue-600 text-white shadow-md'
+                                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        {day}
                                     </button>
-                                </div>
+                                ))}
                             </div>
                         </div>
+
+                        {/* 2. Work Hours */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-sm font-semibold text-gray-700 block mb-2 flex items-center gap-2"><Clock className="h-4 w-4 text-gray-400" /> Workday Start</label>
+                                <select
+                                    value={startHour}
+                                    onChange={(e) => setStartHour(parseInt(e.target.value))}
+                                    className="w-full border p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                >
+                                    {Array.from({ length: 24 }).map((_, i) => (
+                                        <option key={i} value={i}>{i}:00</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-sm font-semibold text-gray-700 block mb-2 flex items-center gap-2"><Clock className="h-4 w-4 text-gray-400" /> Workday End</label>
+                                <select
+                                    value={endHour}
+                                    onChange={(e) => setEndHour(parseInt(e.target.value))}
+                                    className="w-full border p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                >
+                                    {Array.from({ length: 24 }).map((_, i) => (
+                                        <option key={i} value={i}>{i}:00</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* 3. Duration */}
+                        <div>
+                            <label className="text-sm font-semibold text-gray-700 block mb-2">Micro-Break Duration</label>
+                            <div className="flex gap-3">
+                                {[2, 5].map((m) => (
+                                    <button
+                                        key={m}
+                                        onClick={() => setBreakDuration(m)}
+                                        className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all border flex items-center justify-center gap-2 ${breakDuration === m
+                                            ? 'bg-blue-50 border-blue-200 text-blue-700 ring-1 ring-blue-500'
+                                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        {m} mins
+                                        {breakDuration === m && (
+                                            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 4. Frequency */}
+                        <div>
+                            <label className="text-sm font-semibold text-gray-700 block mb-2">Frequency (mins)</label>
+                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="5"
+                                    step="1"
+                                    value={[15, 30, 45, 60, 90, 120].indexOf(workInterval) !== -1
+                                        ? [15, 30, 45, 60, 90, 120].indexOf(workInterval)
+                                        : 3}
+                                    onChange={(e) => {
+                                        const val = parseInt(e.target.value);
+                                        const options = [15, 30, 45, 60, 90, 120];
+                                        setWorkInterval(options[val]);
+                                    }}
+                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                />
+                                <div className="flex justify-between text-xs text-gray-500 font-bold uppercase mt-3 px-1">
+                                    <span>15</span>
+                                    <span>30</span>
+                                    <span>45</span>
+                                    <span>60</span>
+                                    <span>90</span>
+                                    <span>120</span>
+                                </div>
+                            </div>
+                            <p className="text-xs text-center mt-2 text-gray-500">Break every <span className="font-bold text-gray-900">{workInterval} minutes</span></p>
+                        </div>
+
                     </div>
                 </div>
 
@@ -287,7 +274,7 @@ export default function SettingsPage() {
                         onClick={handleSaveReminder}
                         className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-2"
                     >
-                        <Save className="h-4 w-4" /> Save Reminder Settings
+                        <Save className="h-4 w-4" /> Save Reminder Defaults
                     </button>
                 </div>
             </div>

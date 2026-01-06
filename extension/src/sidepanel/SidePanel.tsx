@@ -1,24 +1,50 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import Dashboard from '../components/Dashboard';
 import ExercisePlayer from '../components/ExercisePlayer';
+import Login from '../components/Login';
 
 export default function SidePanel() {
     const [isBreakActive, setIsBreakActive] = useState(false);
+    const [session, setSession] = useState<Session | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Initial Check
+        // 1. Initial Checks
         chrome.storage.local.get(['isBreakActive'], (result) => {
             setIsBreakActive(!!result.isBreakActive);
         });
 
-        // Listen for changes (from background/notifications)
+        // 2. Check Session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+            setLoading(false);
+            if (session?.user) {
+                chrome.runtime.sendMessage({ action: 'SYNC_SETTINGS' });
+            }
+        });
+
+        // 3. Listen for Auth Changes (Login/Logout)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+            setSession(session);
+            if (session?.user) {
+                chrome.runtime.sendMessage({ action: 'SYNC_SETTINGS' });
+            }
+        });
+
+        // 4. Listen for changes (from background/notifications)
         const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
             if (areaName === 'local' && changes.isBreakActive) {
                 setIsBreakActive(!!changes.isBreakActive.newValue);
             }
         };
         chrome.storage.onChanged.addListener(listener);
-        return () => chrome.storage.onChanged.removeListener(listener);
+
+        return () => {
+            chrome.storage.onChanged.removeListener(listener);
+            subscription.unsubscribe();
+        };
     }, []);
 
     const handleFinishBreak = () => {
@@ -30,6 +56,12 @@ export default function SidePanel() {
         chrome.storage.local.set({ isBreakActive: true });
         setIsBreakActive(true);
     };
+
+    if (loading) return <div className="h-screen flex items-center justify-center">Loading...</div>;
+
+    if (!session) {
+        return <Login />;
+    }
 
     if (isBreakActive) {
         return <ExercisePlayer onComplete={handleFinishBreak} />;
