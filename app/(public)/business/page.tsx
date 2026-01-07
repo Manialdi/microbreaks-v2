@@ -83,7 +83,7 @@ export default function BusinessLandingPage() {
                     <div className="lg:col-span-5 relative lg:h-[600px] w-full flex items-center justify-center">
                         <div className="relative w-full aspect-square lg:aspect-auto h-full rounded-2xl overflow-hidden shadow-2xl border border-slate-100 bg-white flex items-center justify-center bg-slate-50">
                             <Image
-                                src="/images/extension-preview-new.png"
+                                src="/images/extension_hero_business.png"
                                 alt="Micro Breaks Extension Interface"
                                 fill
                                 className="object-contain"

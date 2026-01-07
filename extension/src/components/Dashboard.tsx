@@ -9,7 +9,8 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
         break_duration_minutes: 2,
         start_hour: 9,
         end_hour: 17,
-        work_days: [1, 2, 3, 4, 5]
+        work_days: [1, 2, 3, 4, 5],
+        user_override: false
     });
 
     // Draft settings for form inputs
@@ -18,6 +19,17 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
 
     // Stats State
     const [stats, setStats] = useState({ current: 0, streak: 0 });
+
+    const SLOGANS = [
+        "Recharge, Refresh, Refocus.",
+        "Your well-being comes first.",
+        "Wellness built into your workflow.",
+        "Small breaks, big impact.",
+        "Invest in yourself, one break at a time.",
+        "Stay active, stay inspired.",
+        "Because your health matters."
+    ];
+    const [slogan] = useState(() => SLOGANS[Math.floor(Math.random() * SLOGANS.length)]);
 
     // 1. Initialize User & Stats
     useEffect(() => {
@@ -123,7 +135,8 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
 
     // 3. UI Helpers
     const updateDraft = (key: string, value: any) => {
-        setDraftSettings(prev => ({ ...prev, [key]: value }));
+        // If user manually changes something, mark as override
+        setDraftSettings(prev => ({ ...prev, [key]: value, user_override: true }));
         setIsSaved(false);
     };
 
@@ -136,7 +149,15 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
     };
 
     const saveSettings = () => {
-        const newSettings = { ...draftSettings, user_override: true, userId: user?.id };
+        // Respect the current override state (false if they just clicked 'Use Company Settings')
+        const newSettings = {
+            ...draftSettings,
+            userId: user?.id,
+            // If they clicked "Use Company Settings" (false), it stays false.
+            // If they edited something (true), it stays true.
+            user_override: draftSettings.user_override
+        };
+
         setSettings(newSettings);
         chrome.storage.local.set({ settings: newSettings });
         chrome.runtime.sendMessage({ action: 'UPDATE_ALARMS', settings: newSettings });
@@ -161,12 +182,12 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
                     </div>
                     <div>
                         <h1 className="text-lg font-bold tracking-tight leading-none">
-                            Dashboard - {user?.user_metadata?.first_name || user?.user_metadata?.full_name?.split(' ')[0] || 'User'}
+                            Dashboard - {user?.email ? (user.email.split('@')[0].charAt(0).toUpperCase() + user.email.split('@')[0].slice(1)) : 'User'}
                         </h1>
                         <span className="text-[10px] font-medium bg-white/20 px-1.5 py-0.5 rounded text-white/90">
                             Company Plan
                         </span>
-                        <p className="text-[10px] text-blue-100 italic mt-1 opacity-80">"Healthy employees, healthy business"</p>
+                        <p className="text-[10px] text-blue-100 italic mt-1 opacity-80">"{slogan}"</p>
                     </div>
                 </div>
 
@@ -216,9 +237,38 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
 
                 {/* HR Settings Card */}
                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 className="text-xs font-bold text-gray-900 mb-2 flex items-center gap-2">
-                        <Calendar size={14} /> HR Settings
-                    </h3>
+                    <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-xs font-bold text-gray-900 flex items-center gap-2">
+                            <Calendar size={14} /> Customize Schedule
+                        </h3>
+
+                        <button
+                            onClick={() => {
+                                // If currently overriding (no green dot), revert to company defaults
+                                if (draftSettings.user_override) {
+                                    // 1. Mark as NOT overriding
+                                    const newSettings = { ...draftSettings, user_override: false };
+
+                                    // 2. Save this state so Background knows we want defaults
+                                    chrome.storage.local.set({ settings: newSettings });
+
+                                    // 3. Trigger sync - Background will see override:false and fetch Company Settings
+                                    // The storage listener will then update our UI with those new values
+                                    chrome.runtime.sendMessage({ action: 'SYNC_SETTINGS' });
+                                }
+                            }}
+                            className="flex items-center gap-1.5 cursor-pointer group"
+                            title={draftSettings.user_override ? "Click to use Company Settings" : "Using Company Settings"}
+                        >
+                            <span className="text-[9px] font-medium text-gray-400 group-hover:text-gray-600 transition-colors">
+                                Use Company Settings
+                            </span>
+                            <div className={`w-2.5 h-2.5 rounded-full border transition-all ${!draftSettings.user_override
+                                ? 'bg-green-500 border-green-500 shadow-[0_0_4px_rgba(34,197,94,0.4)]'
+                                : 'bg-transparent border-gray-300 group-hover:border-green-400'
+                                }`} />
+                        </button>
+                    </div>
 
                     {/* Days */}
                     <div className="flex justify-between mb-4">
