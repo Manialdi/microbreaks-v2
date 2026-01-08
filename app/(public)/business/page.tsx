@@ -27,9 +27,9 @@ export default function BusinessLandingPage() {
         <div className="bg-gradient-to-b from-blue-50/50 to-white">
             {/* Hero Section */}
             <section className="container mx-auto px-4 py-12 lg:py-16">
-                <div className="grid lg:grid-cols-12 gap-8 items-center">
+                <div className="grid lg:grid-cols-12 gap-16 items-center">
                     {/* Left Column: Text Content */}
-                    <div className="lg:col-span-5 lg:col-start-2 flex flex-col space-y-8 max-w-2xl text-left">
+                    <div className="lg:col-span-6 flex flex-col space-y-8 max-w-2xl text-left">
                         <div className="space-y-4">
                             <h1 className="text-3xl lg:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
                                 <span className="text-blue-600">Micro-breaks</span> your team will actually use
@@ -80,7 +80,7 @@ export default function BusinessLandingPage() {
                     </div>
 
                     {/* Right Column: Hero Image */}
-                    <div className="lg:col-span-5 lg:-ml-6 relative lg:h-[600px] w-full flex items-center justify-center">
+                    <div className="lg:col-span-6 relative lg:h-[600px] w-full flex items-center justify-center">
                         <div className="relative w-full aspect-square lg:aspect-auto h-full rounded-2xl overflow-hidden shadow-2xl border border-slate-100 bg-white flex items-center justify-center bg-slate-50">
                             <Image
                                 src="/images/extension_hero_business.png"
