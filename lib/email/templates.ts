@@ -30,7 +30,7 @@ export const getInviteEmailTemplate = (link: string) => `
             <p style="margin: 0 0 10px 0; font-weight: 600; color: #1e40af;">Step 2: Install Chrome Extension</p>
             <p style="margin: 0; font-size: 14px; color: #1e3a8a; margin-bottom: 16px;">Once you have your password, download the extension to get started.</p>
             
-            <a href="https://chrome.google.com/webstore/detail/placeholder-link" style="display: inline-block; background-color: #ffffff; color: #2563eb; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; border: 1px solid #2563eb; font-size: 14px;">Download Extension</a>
+            <a href="https://chromewebstore.google.com/detail/microbreaks-wellness-for/dbpdhgpjaomegmniibjpdhbgandkecbk" style="display: inline-block; background-color: #ffffff; color: #2563eb; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; border: 1px solid #2563eb; font-size: 14px;">Download Extension</a>
         </div>
         
         <p style="margin-top: 30px; font-size: 13px; color: #9ca3af; text-align: center;">
