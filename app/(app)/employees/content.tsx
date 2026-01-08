@@ -73,7 +73,7 @@ export default function EmployeesPage() {
                     .eq('id', user.id)
                     .single();
 
-                if (!profile?.company_id) return;
+                if (!profile) return;
 
                 const cId = profile.company_id;
                 // @ts-ignore
@@ -87,8 +87,14 @@ export default function EmployeesPage() {
                     }
                 }
 
-                setCompanyId(cId);
+                setCompanyId(cId || null);
                 setCompanyDomain(domain || null);
+
+                if (!cId) {
+                    showToast("No company profile found. Please contact support.", "error");
+                    setLoading(false);
+                    return;
+                }
 
                 // B. Fetch Employees
                 const { data: emps, error } = await supabase

@@ -27,9 +27,9 @@ export default function BusinessLandingPage() {
         <div className="bg-gradient-to-b from-blue-50/50 to-white">
             {/* Hero Section */}
             <section className="container mx-auto px-4 py-12 lg:py-16">
-                <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+                <div className="grid lg:grid-cols-12 gap-8 items-center">
                     {/* Left Column: Text Content */}
-                    <div className="lg:col-span-7 flex flex-col space-y-8 max-w-2xl text-left">
+                    <div className="lg:col-span-5 lg:col-start-2 flex flex-col space-y-8 max-w-2xl text-left">
                         <div className="space-y-4">
                             <h1 className="text-3xl lg:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
                                 <span className="text-blue-600">Micro-breaks</span> your team will actually use
