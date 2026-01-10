@@ -86,7 +86,7 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
             }
             if (res.stats) setStats(res.stats as any);
 
-            // Trial Logic: Prioritize Account Creation Date, fallback to Install Date
+            {/* Trial Logic: Prioritize Account Creation Date, fallback to Install Date
             let startDate = res.installDate as number;
 
             if (user?.created_at) {
@@ -101,6 +101,7 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
             const diff = now - startDate;
             const daysUsed = diff / (1000 * 60 * 60 * 24);
             setDaysRemaining(Math.max(0, Math.ceil(7 - daysUsed)));
+            */}
         });
 
         const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
@@ -166,7 +167,7 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
                         </h1>
                         {!isLocked ? (
                             <span className="text-[10px] font-medium bg-white/20 px-1.5 py-0.5 rounded text-white/90">
-                                Free Plan · {daysRemaining} days left
+                                Free Plan
                             </span>
                         ) : (
                             isPro ? (
@@ -215,7 +216,7 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
                 <button
                     onClick={isLocked ? undefined : onStartBreak}
                     disabled={isLocked}
-                    className={`w-full group relative overflow-hidden text-white shadow-lg py-4 rounded-2xl font-bold transition transform flex items-center justify-center gap-2 
+                    className={`w-full group relative overflow-hidden text-white shadow-lg py-4 rounded-2xl font-bold transition transform flex items-center justify-center gap-2
                     ${isLocked
                             ? 'bg-gray-400 cursor-not-allowed grayscale'
                             : 'bg-gradient-to-r from-blue-500 to-indigo-600 shadow-blue-500/20 active:scale-[0.98] cursor-pointer'
@@ -331,7 +332,10 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
                             onChange={(e) => {
                                 const val = parseInt(e.target.value);
                                 const options = [15, 30, 45, 60, 90, 120];
-                                updateDraft('work_interval_minutes', options[val]);
+                                const selected = options[val];
+                                // Ensure draft updates correctly for controlled input
+                                setDraftSettings(prev => ({ ...prev, work_interval_minutes: selected }));
+                                setIsSaved(false);
                             }}
                             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
                         />
@@ -359,33 +363,6 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
                         {isSaved ? <CheckCircle size={14} /> : <Save size={14} />}
                         {isSaved ? 'Schedule Saved!' : 'Save Schedule'}
                     </button>
-                </div>
-
-                {/* Paywall / Upgrade */}
-                {/* Paywall / Upgrade */}
-                <div className={`bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-100 p-5 rounded-2xl ${isLocked ? 'ring-2 ring-orange-400 shadow-xl' : ''}`}>
-                    <h4 className="text-base font-bold text-orange-900 mb-1">
-                        {isLocked ? 'Unlock Lifetime Access' : 'Full Access (Lifetime)'}
-                    </h4>
-                    <div className="flex items-baseline gap-1 mb-2">
-                        <span className="text-2xl font-black text-orange-600">$49</span>
-                        <span className="text-xs text-orange-700/70 font-medium">/ once</span>
-                    </div>
-                    <ul className="space-y-1 mb-4">
-                        {['Unlimited Breaks', 'Advanced Scheduler', 'Cloud Sync'].map(feat => (
-                            <li key={feat} className="flex items-center gap-1.5 text-xs text-orange-800/80 font-medium">
-                                <CheckCircle size={10} className="text-orange-500" /> {feat}
-                            </li>
-                        ))}
-                    </ul>
-                    <a
-                        href="https://www.micro-breaks.com/individual"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-bold transition-all text-center shadow-lg shadow-orange-500/20"
-                    >
-                        Get Lifetime Access
-                    </a>
                 </div>
 
             </div>

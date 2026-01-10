@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Play, SkipForward, CheckCircle, Clock, Volume2, VolumeX, Lightbulb, Sparkles } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Play, Pause, SkipForward, CheckCircle, Clock, Volume2, VolumeX, Lightbulb, Sparkles } from 'lucide-react';
 import { supabase } from '../lib/supabase'; // Use shared client
 import exercisesData from '../exercises.json';
+import SessionSummary from './SessionSummary';
 
 // Define Exercise Type
 type Exercise = {
@@ -42,6 +43,8 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
     const [sessionTimeLeft, setSessionTimeLeft] = useState(300); // Total session time (default 5m)
     const [exerciseTimeLeft, setExerciseTimeLeft] = useState(60); // Current exercise timer
     const [isActive, setIsActive] = useState(false);
+    const [isPaused, setIsPaused] = useState(false);
+    const [isSessionFinished, setIsSessionFinished] = useState(false); // New state for completion view
     const [durationDisplay, setDurationDisplay] = useState(5);
     const [debugLog, setDebugLog] = useState<string>("Initializing Personal Mode...");
     const [isMuted, setIsMuted] = useState(false);
@@ -49,6 +52,8 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
     const [accumulatedDuration, setAccumulatedDuration] = useState(0);
     // Track played exercises in this session
     const [sessionHistory, setSessionHistory] = useState<string[]>([]);
+
+    const videoRef = useRef<HTMLVideoElement>(null);
 
     const extendTimer = () => {
         setSessionTimeLeft((prev) => prev + 60);
@@ -69,10 +74,21 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
         selectRandomExercise(); // Fire and forget
     }, []);
 
+    // Handle Video Pause/Resume
+    useEffect(() => {
+        if (videoRef.current) {
+            if (isPaused) {
+                videoRef.current.pause();
+            } else {
+                videoRef.current.play().catch(e => console.log("Play interrupted", e));
+            }
+        }
+    }, [isPaused, exercise]);
+
     // Main Timer Loop
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
-        if (isActive) {
+        if (isActive && !isPaused) {
             interval = setInterval(() => {
                 // Decrement Session Time (Stop at 0)
                 setSessionTimeLeft(prev => Math.max(0, prev - 1));
@@ -89,7 +105,7 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
             }, 1000);
         }
         return () => clearInterval(interval);
-    }, [isActive, sessionTimeLeft, exercise]);
+    }, [isActive, isPaused, sessionTimeLeft, exercise]);
 
     const handleExerciseComplete = async () => {
         // Just accumulate time and move to next
@@ -100,20 +116,25 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
         if (sessionTimeLeft > 10) {
             selectRandomExercise();
         } else {
-            // Session Done naturally
-            // Updated: Don't auto-close. Wait for user to click "Finish".
+            // Session Done naturally!
+            await logSessionInDb(accumulatedDuration + duration); // Log final total
             setIsActive(false);
-            setSessionTimeLeft(0);
+            setIsSessionFinished(true); // Switch to Summary View
         }
     };
 
-    const finishSession = async () => {
+    const finishSessionEarly = async () => {
         setIsActive(false);
         // Add any partial time logic if needed, but for now we log the accumulated fully completed exercises
-        // OR we can add the sessionTimeLeft diff. 
-        // Simplest: Just log what we accumulated.
         await logSessionInDb(accumulatedDuration);
-        onComplete();
+
+        // If they click "Finish Break" when time is up, show summary (rare case if auto-finish fails)
+        // If they click "I am Done Early", just exit
+        if (sessionTimeLeft <= 10) {
+            setIsSessionFinished(true);
+        } else {
+            onComplete();
+        }
     };
 
     // Helper to log locally
@@ -169,6 +190,9 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
     };
 
     const selectRandomExercise = () => {
+        // Reset pause state on new exercise
+        setIsPaused(false);
+
         // Use local exercises immediately for instant load
         let availableExercises = exercises.filter(e => {
             const id = e.title || e.name || "";
@@ -208,6 +232,10 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
         setExerciseTimeLeft(mappedExercise.duration || 60);
         setIsActive(true);
     };
+
+    if (isSessionFinished) {
+        return <SessionSummary onFinish={onComplete} />;
+    }
 
     if (!exercise) return <div className="p-4 text-center">Loading Exercise...</div>;
 
@@ -266,6 +294,7 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
                     <div className="relative z-10 w-full h-full flex items-center justify-center">
                         {exercise.video_url ? (
                             <video
+                                ref={videoRef}
                                 src={exercise.video_url}
                                 className="w-full h-full object-contain invert brightness-110 contrast-110 drop-shadow-md p-2"
                                 autoPlay
@@ -332,13 +361,13 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
                     {/* Progress Bar */}
                     <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1">
                         <div
-                            className="h-full bg-emerald-500 transition-all duration-1000 ease-linear"
+                            className={`h-full transition-all duration-1000 ease-linear ${isPaused ? 'bg-orange-400' : 'bg-emerald-500'}`}
                             style={{ width: `${(exerciseTimeLeft / (exercise.duration || 60)) * 100}%` }}
                         />
                     </div>
 
-                    {/* Action Buttons Row 1: Skip & Extend */}
-                    <div className="grid grid-cols-2 gap-3 mb-1">
+                    {/* Action Buttons Row 1: Skip, Pause, Extend */}
+                    <div className="grid grid-cols-3 gap-2 mb-1">
                         <div className="flex flex-col gap-0.5">
                             <button
                                 onClick={selectRandomExercise}
@@ -347,7 +376,23 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
                                 <SkipForward size={18} />
                                 Skip
                             </button>
-                            <span className="text-[10px] text-slate-400 text-center font-medium">Choose another exercise if needed</span>
+                            <span className="text-[9px] text-slate-400 text-center font-medium leading-tight">Next exercise</span>
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                            <button
+                                onClick={() => setIsPaused(!isPaused)}
+                                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all active:scale-95 ${isPaused
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                                    }`}
+                            >
+                                {isPaused ? <Play size={18} /> : <Pause size={18} />}
+                                {isPaused ? 'Resume' : 'Pause'}
+                            </button>
+                            <span className="text-[9px] text-slate-400 text-center font-medium leading-tight">
+                                {isPaused ? 'Continue' : 'Take a breath'}
+                            </span>
                         </div>
 
                         <div className="flex flex-col gap-0.5">
@@ -358,13 +403,13 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
                                 <Clock size={18} />
                                 +1min
                             </button>
-                            <span className="text-[10px] text-slate-400 text-center font-medium">Only if you need it</span>
+                            <span className="text-[9px] text-slate-400 text-center font-medium leading-tight">Extend time</span>
                         </div>
                     </div>
 
                     {/* Action Buttons Row 2: Done/Finish */}
                     <button
-                        onClick={finishSession}
+                        onClick={finishSessionEarly}
                         className={`w-full py-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 text-sm ${sessionTimeLeft <= 0
                             ? 'bg-emerald-600 hover:bg-emerald-700 text-white animate-pulse'
                             : 'bg-slate-800 hover:bg-slate-700 text-white/95'
@@ -376,7 +421,7 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
 
                     {/* Quit Link - Zero Spacing */}
                     <button
-                        onClick={finishSession}
+                        onClick={finishSessionEarly}
                         className="w-full py-1 text-xs text-slate-400 font-medium hover:text-slate-600 transition-colors -mt-1"
                     >
                         Quit to Dashboard
