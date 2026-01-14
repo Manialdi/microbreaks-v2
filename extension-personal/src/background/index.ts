@@ -220,16 +220,16 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
             console.log("Supabase session missing but Local Token found. Treating as Logged In.");
         }
 
-        // Check Trial
-        const res = await chrome.storage.local.get(['installDate']);
-        const installDate = (res.installDate as number) || Date.now();
-        const daysUsed = (Date.now() - installDate) / (1000 * 60 * 60 * 24);
-        const isTrialExpired = daysUsed > 7;
+        // Check Trial - REMOVED for Free Plan
+        // const res = await chrome.storage.local.get(['installDate']);
+        // const installDate = (res.installDate as number) || Date.now();
+        // const daysUsed = (Date.now() - installDate) / (1000 * 60 * 60 * 24);
+        // const isTrialExpired = daysUsed > 7;
 
-        if (isTrialExpired) {
-            console.log("Trial expired. Suppressed.");
-            return;
-        }
+        // if (isTrialExpired) {
+        //    console.log("Trial expired. Suppressed.");
+        //    return;
+        // }
 
         // Validity Checks (Time/Day) are now effectively handled by the scheduler logic itself!
         // The scheduler ONLY creates alarms for valid times. 
