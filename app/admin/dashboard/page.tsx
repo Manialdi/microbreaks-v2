@@ -104,115 +104,119 @@ export default function AdminDashboard() {
     return (
         <div className="space-y-8">
             {/* Top Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+            {/* Top Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
 
-                {/* 1. Paid Users (New) */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="p-2 bg-green-100 text-green-600 rounded-lg">
-                            <Users size={20} />
-                        </div>
+                {/* 1. Paid Users */}
+                <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div className="flex items-center gap-2 mb-2 text-green-600">
+                        <Users size={16} />
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Paid Users</span>
                     </div>
-                    <div className="text-3xl font-bold text-slate-900 mb-1">
+                    <div className="text-xl font-bold text-slate-900">
                         {userStats?.paidUsers?.toLocaleString() || "0"}
                     </div>
-                    <div className="text-sm text-slate-500">Paid Users</div>
                 </div>
 
                 {/* 2. Registered Users */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                            <Users size={20} />
-                        </div>
-                        <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">
-                            +{userStats?.last30Days || 0} this month
-                        </span>
+                <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div className="flex items-center gap-2 mb-2 text-blue-600">
+                        <Users size={16} />
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Registered</span>
                     </div>
-                    <div className="text-3xl font-bold text-slate-900 mb-1">
+                    <div className="text-xl font-bold text-slate-900">
                         {userStats?.totalUsers?.toLocaleString() || "0"}
                     </div>
-                    <div className="text-sm text-slate-500">Registered Users</div>
+                    <div className="text-[10px] text-green-600 font-medium mt-1">
+                        +{userStats?.last30Days || 0} recent
+                    </div>
                 </div>
 
-                {/* 3. Chrome Extension Users */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-                            <Chrome size={20} />
+                {/* 3. Chrome Users */}
+                <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-2 text-indigo-600">
+                        <div className="flex items-center gap-2">
+                            <Chrome size={16} />
+                            <span className="text-[10px] uppercase font-bold text-slate-400">Chrome</span>
                         </div>
                     </div>
-                    <div className="text-3xl font-bold text-slate-900 mb-1">
+                    <div className="text-xl font-bold text-slate-900">
                         {chromeStore?.users?.toLocaleString() || "0"}
                     </div>
-                    <div className="text-sm text-slate-500 mb-2">Chrome Web Store Users</div>
                     {chromeStore?.url && (
-                        <a
-                            href={chromeStore.url}
-                            target="_blank"
-                            className="text-xs text-indigo-600 hover:underline flex items-center gap-1"
-                        >
-                            View Store Page <ExternalLink size={10} />
+                        <a href={chromeStore.url} target="_blank" className="text-[10px] text-indigo-500 hover:underline mt-1 truncate">
+                            View Store
                         </a>
                     )}
                 </div>
 
-                {/* 4. Google Analytics Users */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="p-2 bg-orange-100 text-orange-600 rounded-lg">
-                            <Activity size={20} />
-                        </div>
-                        {analytics?.configured && (
-                            <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">
-                                Active 7d
-                            </span>
-                        )}
+                {/* 4. Impressions (Link Only) */}
+                <a
+                    href="https://chrome.google.com/webstore/devconsole/c6876d89-ae90-477a-aeb6-0b8049e49970/gmdpcildfnehopafflccogmhmichoppa/analytics/impressions"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-indigo-400 transition-colors group cursor-pointer"
+                >
+                    <div className="flex items-center gap-2 mb-2 text-slate-400 group-hover:text-indigo-600">
+                        <TrendingUp size={16} />
+                        <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-indigo-600">Impressions</span>
                     </div>
-                    <div className="text-3xl font-bold text-slate-900 mb-1">
-                        {analytics?.totals?.users?.toLocaleString() || "N/A"}
+                    <div className="text-sm font-bold text-slate-900 flex items-center gap-1">
+                        View Report <ExternalLink size={12} className="opacity-50" />
                     </div>
-                    <div className="text-sm text-slate-500">Website Visitors (30d)</div>
+                </a>
+
+                {/* 5. Installs & Uninstalls (Link Only) */}
+                <a
+                    href="https://chrome.google.com/webstore/devconsole/c6876d89-ae90-477a-aeb6-0b8049e49970/gmdpcildfnehopafflccogmhmichoppa/analytics/installs"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-indigo-400 transition-colors group cursor-pointer"
+                >
+                    <div className="flex items-center gap-2 mb-2 text-slate-400 group-hover:text-indigo-600">
+                        <Download size={16} />
+                        <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-indigo-600"> installs</span>
+                    </div>
+                    <div className="text-sm font-bold text-slate-900 flex items-center gap-1">
+                        View Report <ExternalLink size={12} className="opacity-50" />
+                    </div>
+                </a>
+
+                {/* 6. Website Visitors */}
+                <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div className="flex items-center gap-2 mb-2 text-orange-600">
+                        <Activity size={16} />
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Visitors</span>
+                    </div>
+                    <div className="text-xl font-bold text-slate-900">
+                        {analytics?.totals?.users?.toLocaleString() || "0"}
+                    </div>
                     {!analytics?.configured && (
-                        <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
-                            <AlertTriangle size={12} /> Setup Required
-                        </p>
+                        <span className="text-[9px] text-amber-500 mt-1">Setup Req</span>
                     )}
                 </div>
 
-                {/* 5. Google Analytics Views */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
-                            <BarChart3 size={20} />
-                        </div>
+                {/* 7. Page Views */}
+                <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div className="flex items-center gap-2 mb-2 text-purple-600">
+                        <BarChart3 size={16} />
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Page Views</span>
                     </div>
-                    <div className="text-3xl font-bold text-slate-900 mb-1">
-                        {analytics?.totals?.views?.toLocaleString() || "N/A"}
+                    <div className="text-xl font-bold text-slate-900">
+                        {analytics?.totals?.views?.toLocaleString() || "0"}
                     </div>
-                    <div className="text-sm text-slate-500">Page Views (30d)</div>
                 </div>
 
-                {/* 6. LinkedIn Quick Access */}
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="p-2 bg-blue-100 text-[#0077b5] rounded-lg">
-                            <Linkedin size={20} />
-                        </div>
+                {/* 8. Linkedin Portal */}
+                <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between group cursor-pointer hover:border-blue-400 transition-colors"
+                    onClick={() => linkedin?.dashboardUrl && window.open(linkedin.dashboardUrl, '_blank')}>
+                    <div className="flex items-center gap-2 mb-2 text-[#0077b5]">
+                        <Linkedin size={16} />
+                        <span className="text-[10px] uppercase font-bold text-slate-400 group-hover:text-blue-500">LinkedIn</span>
                     </div>
-                    <h3 className="font-bold text-slate-900 mb-2">LinkedIn Portal</h3>
-                    {linkedin?.configured ? (
-                        <a
-                            href={linkedin.dashboardUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:text-blue-800 font-medium inline-flex items-center"
-                        >
-                            Open Dashboard <ExternalLink size={14} className="ml-1" />
-                        </a>
-                    ) : (
-                        <p className="text-sm text-slate-500">Not configured</p>
-                    )}
+                    <div className="text-sm font-bold text-slate-900 flex items-center gap-1">
+                        View Portal <ExternalLink size={12} className="opacity-50 group-hover:opacity-100" />
+                    </div>
                 </div>
             </div>
 

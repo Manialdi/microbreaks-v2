@@ -4,16 +4,25 @@ import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import Dashboard from '../components/Dashboard';
 import ExercisePlayer from '../components/ExercisePlayer';
 import Login from '../components/Login';
+import Onboarding from '../components/Onboarding';
 
 export default function SidePanel() {
     const [isBreakActive, setIsBreakActive] = useState(false);
+    const [breakSessionId, setBreakSessionId] = useState<number>(Date.now());
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
+    const [showOnboarding, setShowOnboarding] = useState(false);
 
     useEffect(() => {
         // 1. Initial Checks
-        chrome.storage.local.get(['isBreakActive'], (result) => {
+        chrome.storage.local.get(['isBreakActive', 'breakSessionId', 'hasSeenOnboarding'], (result) => {
             setIsBreakActive(!!result.isBreakActive);
+            if (result.breakSessionId) setBreakSessionId(Number(result.breakSessionId));
+
+            // Onboarding Check
+            if (!result.hasSeenOnboarding) {
+                setShowOnboarding(true);
+            }
         });
 
         // 2. Check Session
@@ -26,17 +35,34 @@ export default function SidePanel() {
         });
 
         // 3. Listen for Auth Changes (Login/Logout)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session: Session | null) => {
             setSession(session);
             if (session?.user) {
                 chrome.runtime.sendMessage({ action: 'SYNC_SETTINGS' });
+            }
+
+            // RESET ONBOARDING ON LOGOUT
+            if (event === 'SIGNED_OUT') {
+                chrome.storage.local.remove('hasSeenOnboarding');
+                setShowOnboarding(false);
             }
         });
 
         // 4. Listen for changes (from background/notifications)
         const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-            if (areaName === 'local' && changes.isBreakActive) {
-                setIsBreakActive(!!changes.isBreakActive.newValue);
+            if (areaName === 'local') {
+                if (changes.isBreakActive) {
+                    setIsBreakActive(!!changes.isBreakActive.newValue);
+                }
+                if (changes.breakSessionId) {
+                    setBreakSessionId(changes.breakSessionId.newValue as number);
+                }
+                // Sync onboarding state
+                if (changes.hasSeenOnboarding) {
+                    if (changes.hasSeenOnboarding.newValue === true) {
+                        setShowOnboarding(false);
+                    }
+                }
             }
         };
         chrome.storage.onChanged.addListener(listener);
@@ -53,8 +79,10 @@ export default function SidePanel() {
     };
 
     const handleStartBreakManually = () => {
-        chrome.storage.local.set({ isBreakActive: true });
+        const newId = Date.now();
+        chrome.storage.local.set({ isBreakActive: true, breakSessionId: newId });
         setIsBreakActive(true);
+        setBreakSessionId(newId);
     };
 
     if (loading) return <div className="h-screen flex items-center justify-center">Loading...</div>;
@@ -63,8 +91,14 @@ export default function SidePanel() {
         return <Login />;
     }
 
+    // Priority 1: Onboarding
+    if (showOnboarding) {
+        return <Onboarding onComplete={() => setShowOnboarding(false)} />;
+    }
+
+    // Priority 2: Active Break
     if (isBreakActive) {
-        return <ExercisePlayer onComplete={handleFinishBreak} />;
+        return <ExercisePlayer key={breakSessionId} onComplete={handleFinishBreak} />;
     }
 
     return (

@@ -318,14 +318,14 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // Notification Interactions
 chrome.notifications.onClicked.addListener(() => {
     console.log("Notification Clicked -> Open Panel");
-    chrome.storage.local.set({ isBreakActive: true });
+    chrome.storage.local.set({ isBreakActive: true, breakSessionId: Date.now() });
     openSidePanel();
 });
 
 chrome.notifications.onButtonClicked.addListener((_notificationId: string, buttonIndex: number) => {
     if (buttonIndex === 0) {
         // Start
-        chrome.storage.local.set({ isBreakActive: true });
+        chrome.storage.local.set({ isBreakActive: true, breakSessionId: Date.now() });
         openSidePanel();
     } else if (buttonIndex === 1) {
         // Snooze

@@ -180,25 +180,36 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
                         {/* Use simple text or generic icon if assets missing */}
                         <span className="font-bold text-lg">M</span>
                     </div>
-                    <div>
+                    <div className="flex flex-col justify-center gap-1">
                         <h1 className="text-lg font-bold tracking-tight leading-none">
                             Dashboard - {user?.email ? (user.email.split('@')[0].charAt(0).toUpperCase() + user.email.split('@')[0].slice(1)) : 'User'}
                         </h1>
-                        <span className="text-[10px] font-medium bg-white/20 px-1.5 py-0.5 rounded text-white/90">
+                        <span className="text-[10px] font-medium bg-white/20 px-1.5 py-0.5 rounded text-white/90 w-fit">
                             Company Plan
                         </span>
-                        <p className="text-[10px] text-blue-100 italic mt-1 opacity-80">"{slogan}"</p>
+                        <p className="text-[10px] text-blue-100 italic opacity-80 leading-none">"{slogan}"</p>
                     </div>
                 </div>
 
-                <div className="flex flex-col items-end gap-1">
-                    <button onClick={handleLogout} className="flex items-center gap-1.5 p-1.5 hover:bg-white/10 rounded-lg transition-all text-white/90 hover:text-white group" title="Log Out">
+                <div className="flex flex-col items-end">
+                    <button onClick={handleLogout} className="flex items-center gap-1.5 p-1 hover:bg-white/10 rounded-lg transition-all text-white/90 hover:text-white group" title="Log Out">
                         <span className="text-[10px] text-blue-100 italic opacity-80 group-hover:opacity-100 transition-opacity">Logout</span>
-                        <LogOut className="h-4 w-4" />
+                        <LogOut className="h-3.5 w-3.5" />
                     </button>
+
+                    <a
+                        href="https://youtu.be/47vmfKzNEGI"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[10px] text-blue-100 hover:text-white transition-colors opacity-80 hover:opacity-100 pr-1 py-0.5"
+                    >
+                        <Play size={10} className="fill-current" />
+                        Watch Guide
+                    </a>
+
                     <a
                         href="#"
-                        className="flex items-center gap-1 text-[10px] text-blue-100 hover:text-white transition-colors opacity-80 hover:opacity-100 pr-1.5"
+                        className="flex items-center gap-1 text-[10px] text-blue-100 hover:text-white transition-colors opacity-80 hover:opacity-100 pr-1 py-0.5"
                     >
                         <HelpCircle size={12} />
                         Help
@@ -206,7 +217,7 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-20">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-20 scrollbar-hide">
 
                 {/* Start Button */}
                 <button
@@ -219,14 +230,14 @@ export default function Dashboard({ onStartBreak }: { onStartBreak: () => void }
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 text-center">
+                    <div className="bg-white p-2.5 rounded-2xl shadow-sm border border-gray-100 text-center">
                         <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 flex items-center justify-center gap-1">
                             <Activity size={10} /> Today's Breaks
                         </p>
                         <div className="text-base font-black text-gray-800">{stats.current}</div>
                         <p className="text-[9px] text-gray-400 mt-0.5 font-medium">Keep moving!</p>
                     </div>
-                    <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 text-center">
+                    <div className="bg-white p-2.5 rounded-2xl shadow-sm border border-gray-100 text-center">
                         <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 flex items-center justify-center gap-1">
                             <Flame size={10} className="text-orange-500" /> Streak
                         </p>
