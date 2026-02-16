@@ -44,13 +44,10 @@ export default function StepChallengePrivacyPage() {
 
                     <h3 className="text-lg font-semibold text-slate-800 mt-6 mb-2">b. Health & Fitness Data (Step Count Only)</h3>
                     <p>With your explicit permission, StepChallenge may access:</p>
+                    <p className="mt-2">Daily step count from:</p>
                     <ul className="list-disc pl-5 space-y-2 mt-2">
-                        <li>Daily step count from:
-                            <ul className="list-circle pl-5 mt-1">
-                                <li>Apple Health (iOS)</li>
-                                <li>Health Connect or Google Fit (Android)</li>
-                            </ul>
-                        </li>
+                        <li>Apple Health (iOS)</li>
+                        <li>Health Connect or Google Fit (Android)</li>
                     </ul>
 
                     <div className="bg-amber-50 border-l-4 border-amber-500 p-4 my-6">
@@ -86,6 +83,7 @@ export default function StepChallengePrivacyPage() {
                         <li>Improve the app experience</li>
                     </ul>
                     <p className="mt-2">We do not use health or personal data for advertising.</p>
+                    <p className="mt-2">The use of information received from Health Connect will adhere to the Health Connect Permissions Policy, including the Limited Use requirements.</p>
 
                     <h2 className="text-xl font-bold text-slate-900 mt-8 mb-4">3. Data Sharing</h2>
                     <p>We do not sell, rent, or share your personal or health data with third parties.</p>
