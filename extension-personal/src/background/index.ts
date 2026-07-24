@@ -172,14 +172,18 @@ chrome.runtime.onStartup.addListener(() => {
     scheduleNextAlarm();
 });
 
-function showNotification() {
+async function showNotification() {
+    const { avatar_data_url: avatarDataUrl } = await chrome.storage.local.get(['avatar_data_url']);
+    const notificationIcon = typeof avatarDataUrl === 'string'
+        ? avatarDataUrl
+        : chrome.runtime.getURL('assets/logo-v2.jpg');
     // Clear previous notification to prevent stacking
     chrome.notifications.clear(NOTIFICATION_ID, () => {
         chrome.notifications.create(NOTIFICATION_ID, {
             type: 'basic',
-            iconUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
-            title: 'Time for a MicroBreak! 🧘',
-            message: 'Take 2 minutes to stretch and refresh.',
+            iconUrl: notificationIcon,
+            title: typeof avatarDataUrl === 'string' ? 'Your break buddy is here ✨' : 'Time for a MicroBreak! 🧘',
+            message: typeof avatarDataUrl === 'string' ? 'Let’s take 2 minutes to stretch together.' : 'Take 2 minutes to stretch and refresh.',
             buttons: [
                 { title: 'Start Exercise' },
                 { title: 'Snooze 5m' }
@@ -188,6 +192,19 @@ function showNotification() {
             requireInteraction: true
         });
     });
+}
+
+async function showAvatarOnActiveChromeTab() {
+    try {
+        const window = await chrome.windows.getLastFocused();
+        if (!window.focused) return;
+        const tabs = await chrome.tabs.query({ active: true, windowId: window.id });
+        const activeTab = tabs[0];
+        if (!activeTab?.id || !activeTab.url || /^(chrome|edge|about|devtools):/.test(activeTab.url)) return;
+        await chrome.tabs.sendMessage(activeTab.id, { action: 'SHOW_AVATAR_REMINDER' });
+    } catch {
+        // Restricted browser pages cannot host an extension content script.
+    }
 }
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
@@ -237,12 +254,14 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         // So if an alarm fires, it IS a valid time (unless settings changed in the interim).
 
         showNotification();
+        showAvatarOnActiveChromeTab();
     }
 
     // HANDLING SNOOZE
     else if (alarm.name === ALARM_SNOOZE) {
         // Just show notification again
         showNotification();
+        showAvatarOnActiveChromeTab();
     }
 });
 
@@ -278,6 +297,18 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         // Frontend request to refresh schedule (e.g. after save)
         scheduleNextAlarm();
         sendResponse({ status: 'scheduled' });
+    }
+    else if (message.action === 'AVATAR_START_BREAK') {
+        chrome.storage.local.set({ isBreakActive: true, breakSessionId: Date.now() });
+        openSidePanel();
+        sendResponse({ status: 'opening' });
+    }
+    else if (message.action === 'AVATAR_SNOOZE') {
+        chrome.alarms.create(ALARM_SNOOZE, { delayInMinutes: 5 });
+        sendResponse({ status: 'snoozed' });
+    }
+    else if (message.action === 'AVATAR_DISMISS') {
+        sendResponse({ status: 'dismissed' });
     }
 });
 

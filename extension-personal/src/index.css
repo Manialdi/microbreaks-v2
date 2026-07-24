@@ -7,3 +7,23 @@ body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
+
+@keyframes avatar-enter {
+  from { transform: translateX(130%); opacity: 0; }
+  70% { transform: translateX(-6px); opacity: 1; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes avatar-celebrate {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-16px) rotate(-5deg); }
+  50% { transform: translateY(0) rotate(4deg); }
+  75% { transform: translateY(-9px) rotate(-3deg); }
+}
+
+.avatar-enter { animation: avatar-enter 700ms cubic-bezier(.2,.9,.2,1) both; }
+.avatar-celebrate { animation: avatar-celebrate 850ms ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-enter, .avatar-celebrate { animation: none; }
+}

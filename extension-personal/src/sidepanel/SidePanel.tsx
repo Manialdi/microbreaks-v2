@@ -5,6 +5,7 @@ import Auth from '../components/Auth';
 import PersonalHome from '../components/PersonalHome';
 import ExercisePlayer from '../components/ExercisePlayer';
 import Onboarding from '../components/Onboarding';
+import AvatarCompanion from '../components/AvatarCompanion';
 
 export default function SidePanel() {
     const [isBreakActive, setIsBreakActive] = useState(false);
@@ -12,6 +13,7 @@ export default function SidePanel() {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const [celebrating, setCelebrating] = useState(false);
 
     useEffect(() => {
         // Initial Check
@@ -73,8 +75,12 @@ export default function SidePanel() {
     }, []);
 
     const handleFinishBreak = () => {
-        chrome.storage.local.set({ isBreakActive: false });
-        setIsBreakActive(false);
+        setCelebrating(true);
+        setTimeout(() => {
+            chrome.storage.local.set({ isBreakActive: false });
+            setIsBreakActive(false);
+            setCelebrating(false);
+        }, 1400);
     };
 
     const handleStartBreakManually = () => {
@@ -95,7 +101,7 @@ export default function SidePanel() {
 
     // Priority 2: Active Break
     if (isBreakActive) {
-        return <ExercisePlayer key={breakSessionId} onComplete={handleFinishBreak} />;
+        return <><ExercisePlayer key={breakSessionId} onComplete={handleFinishBreak} /><AvatarCompanion celebrating={celebrating} /></>;
     }
 
     // Priority 3: Dashboard

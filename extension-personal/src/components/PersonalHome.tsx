@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Play, LogOut, Clock, Calendar, CheckCircle, Save, Lock, AlertTriangle, Flame, Activity, HelpCircle } from 'lucide-react';
+import { Play, LogOut, Clock, Calendar, CheckCircle, Save, Lock, AlertTriangle, Flame, Activity, HelpCircle, Sparkles } from 'lucide-react';
+import AvatarStudio from './AvatarStudio';
 
 export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () => void, user: any }) {
     // Current active settings (truth)
@@ -66,13 +67,16 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
     };
 
     const [isPro, setIsPro] = useState(false);
+    const [avatar, setAvatar] = useState<string | null>(null);
+    const [showAvatarStudio, setShowAvatarStudio] = useState(false);
 
     // Load Data
     useEffect(() => {
         // supabase.auth.getUser() handled by parent
 
-        chrome.storage.local.get(['settings', 'stats', 'installDate', 'is_pro'], (res) => {
+        chrome.storage.local.get(['settings', 'stats', 'installDate', 'is_pro', 'avatar_data_url'], (res) => {
             if (res.is_pro) setIsPro(true);
+            if (res.avatar_data_url) setAvatar(String(res.avatar_data_url));
 
             if (res.settings) {
                 // Merge saved settings with defaults to ensure new keys (like break_duration_minutes) exist
@@ -145,7 +149,15 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
     const handleLogout = async () => {
         // Clear user-specific data from local storage
         // We keep 'installDate' (device trial) and 'rememberedEmail' (convenience)
-        await chrome.storage.local.remove(['settings', 'stats', 'isBreakActive']);
+        await chrome.storage.local.remove([
+            'settings',
+            'stats',
+            'isBreakActive',
+            'avatar_data_url',
+            'avatar_style',
+            'avatar_presentation',
+            'avatar_generation_batches'
+        ]);
         await supabase.auth.signOut();
     };
 
@@ -155,6 +167,7 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
 
     return (
         <div className="h-full bg-gray-50 flex flex-col relative overflow-hidden text-gray-800 font-sans">
+            {showAvatarStudio && <AvatarStudio onClose={() => setShowAvatarStudio(false)} onSaved={setAvatar} />}
             {/* Header */}
             <div className="relative z-10 flex justify-between items-center p-6 pb-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md">
                 <div className="flex items-center gap-2">
@@ -198,6 +211,19 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-20">
+
+                <div className="bg-gradient-to-br from-violet-50 to-blue-50 p-4 rounded-2xl border border-violet-100 flex items-center gap-3">
+                    <div className="w-16 h-16 shrink-0 rounded-full bg-white shadow-sm border-2 border-white overflow-hidden flex items-center justify-center">
+                        {avatar ? <img src={avatar} alt="Your break buddy" className="w-full h-full object-contain bg-white" /> : <Sparkles className="text-violet-500" size={26} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-xs font-black text-gray-900">{avatar ? 'Your break buddy is ready' : 'Meet your break buddy'}</p>
+                        <p className="text-[10px] leading-relaxed text-gray-500 mt-0.5">{avatar ? 'It will greet you in reminders and breaks.' : 'Create a personal avatar from one photo.'}</p>
+                        <button onClick={() => setShowAvatarStudio(true)} className="mt-2 text-[10px] font-bold text-white bg-violet-600 hover:bg-violet-700 rounded-lg px-3 py-1.5">
+                            {avatar ? 'Change avatar' : 'Create free avatar'}
+                        </button>
+                    </div>
+                </div>
 
                 {/* Trial Expired Alert */}
                 {isLocked && (

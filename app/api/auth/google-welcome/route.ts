@@ -63,9 +63,12 @@ export async function POST(req: NextRequest) {
         }
 
         // Use Service Role to admin user data
-        const supabaseUrl = 'https://vnhhlyceginwmeyohafs.supabase.co';
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL_INDIVIDUAL;
         // Note: NEVER expose this on client. This is a server route.
-        const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuaGhseWNlZ2lud21leW9oYWZzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NjIyNzI1MCwiZXhwIjoyMDgxODAzMjUwfQ.fht5PlUgw9vqaLDhTVAWMdt-RHP62tEwhzpYpQsPNn0';
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY_INDIVIDUAL;
+        if (!supabaseUrl || !serviceRoleKey) {
+            return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+        }
 
         const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
