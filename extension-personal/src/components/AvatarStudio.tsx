@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Camera, Check, ChevronLeft, Play, RefreshCw, Sparkles, Upload, X } from 'lucide-react';
+import { Camera, Check, ChevronLeft, Copy, Play, RefreshCw, Sparkles, Upload, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 type AvatarStyle = 'illustrated' | 'pixel' | 'chibi';
@@ -25,6 +25,8 @@ export default function AvatarStudio({ onClose, onSaved }: { onClose: () => void
     const [selected, setSelected] = useState(0);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
+    const [diagnostics, setDiagnostics] = useState('');
+    const [copied, setCopied] = useState(false);
 
     const selectPhoto = (file?: File) => {
         setError('');
@@ -45,30 +47,41 @@ export default function AvatarStudio({ onClose, onSaved }: { onClose: () => void
 
     const generateCharacter = async () => {
         if (!photoFile) return;
-        setBusy(true); setError('');
+        setBusy(true); setError(''); setDiagnostics('');
+        const requestId = crypto.randomUUID();
+        const startedAt = Date.now();
+        let status: number | null = null;
         try {
             const body = new FormData();
             body.append('stage', 'character'); body.append('photo', photoFile);
             body.append('style', style); body.append('presentation', presentation);
-            const response = await fetch('https://www.micro-breaks.com/api/avatar/generate', { method: 'POST', headers: { Authorization: `Bearer ${await token()}` }, body });
+            const response = await fetch('https://www.micro-breaks.com/api/avatar/generate', { method: 'POST', headers: { Authorization: `Bearer ${await token()}`, 'X-Request-ID': requestId }, body });
+            status = response.status;
             const result = await response.json() as { avatars?: string[]; error?: string };
             if (!response.ok || !result.avatars?.length) throw new Error(result.error || 'Avatar generation failed.');
             setChoices(result.avatars); setSelected(0); setStep('choices');
-        } catch (cause) { setError(cause instanceof Error ? cause.message : 'Avatar generation failed.'); }
+        } catch (cause) {
+            setError(cause instanceof Error ? cause.message : 'Avatar generation failed.');
+            setDiagnostics(makeDiagnostics('character', requestId, startedAt, status, cause));
+        }
         finally { setBusy(false); }
     };
 
     const generateMotionPack = async () => {
         const avatar = choices[selected];
         if (!avatar) return;
-        setStep('motion'); setBusy(true); setError('');
+        setStep('motion'); setBusy(true); setError(''); setDiagnostics('');
+        const requestId = crypto.randomUUID();
+        const startedAt = Date.now();
+        let status: number | null = null;
         try {
             const avatarBlob = await (await fetch(avatar)).blob();
             const body = new FormData();
             body.append('stage', 'motion-pack');
             body.append('avatar', avatarBlob, 'approved-avatar.webp');
             body.append('style', style);
-            const response = await fetch('https://www.micro-breaks.com/api/avatar/generate', { method: 'POST', headers: { Authorization: `Bearer ${await token()}` }, body });
+            const response = await fetch('https://www.micro-breaks.com/api/avatar/generate', { method: 'POST', headers: { Authorization: `Bearer ${await token()}`, 'X-Request-ID': requestId }, body });
+            status = response.status;
             const result = await response.json() as { motionPack?: MotionPack; error?: string };
             if (!response.ok || !result.motionPack) throw new Error(result.error || 'Movement generation failed.');
             await chrome.storage.local.set({
@@ -82,7 +95,11 @@ export default function AvatarStudio({ onClose, onSaved }: { onClose: () => void
                 avatar_complete_lean_url: result.motionPack.complete,
             });
             onSaved(avatar, 'image'); setStep('ready');
-        } catch (cause) { setError(cause instanceof Error ? cause.message : 'Movement generation failed.'); setStep('choices'); }
+        } catch (cause) {
+            setError(cause instanceof Error ? cause.message : 'Movement generation failed.');
+            setDiagnostics(makeDiagnostics('motion-pack', requestId, startedAt, status, cause));
+            setStep('choices');
+        }
         finally { setBusy(false); }
     };
 
@@ -93,6 +110,32 @@ export default function AvatarStudio({ onClose, onSaved }: { onClose: () => void
         if (step === 'choices') return setStep('photo');
         onClose();
     };
+
+    const makeDiagnostics = (stage: string, requestId: string, startedAt: number, status: number | null, cause: unknown) => JSON.stringify({
+        product: 'Microbreaks Personal',
+        extensionVersion: chrome.runtime.getManifest().version,
+        stage,
+        requestId,
+        timestamp: new Date().toISOString(),
+        durationMs: Date.now() - startedAt,
+        httpStatus: status,
+        online: navigator.onLine,
+        errorType: cause instanceof Error ? cause.name : 'UnknownError',
+        errorMessage: cause instanceof Error ? cause.message : String(cause),
+        endpointHost: 'www.micro-breaks.com',
+    }, null, 2);
+
+    const copyDiagnostics = async () => {
+        if (!diagnostics) return;
+        await navigator.clipboard.writeText(diagnostics);
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1800);
+    };
+
+    const errorDetails = diagnostics && <div className="mt-3 rounded-xl border border-red-100 bg-red-50 p-3">
+        <p className="text-[10px] leading-relaxed text-red-700">Safe technical details are available. They contain no photo, token, email, or API key.</p>
+        <button onClick={copyDiagnostics} className="mt-2 flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-[10px] font-bold text-red-700 shadow-sm"><Copy size={13}/>{copied ? 'Copied' : 'Copy error details'}</button>
+    </div>;
 
     return <div className="fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-sm p-3 flex items-center justify-center">
         <div className="w-full max-h-[94vh] overflow-y-auto bg-white rounded-3xl shadow-2xl">
@@ -122,14 +165,14 @@ export default function AvatarStudio({ onClose, onSaved }: { onClose: () => void
                     <label className="block mt-4 text-[10px] font-bold uppercase text-gray-500">Character presentation (optional)</label>
                     <select value={presentation} onChange={e => setPresentation(e.target.value as Presentation)} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs"><option value="match">Match the photo</option><option value="masculine">Masculine</option><option value="feminine">Feminine</option><option value="neutral">Neutral</option></select>
                     <p className="mt-1 text-[10px] text-gray-400">This only guides the character’s visual presentation; it is not asking for the person’s gender identity.</p>
-                    {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
+                    {error && <p className="mt-3 text-xs text-red-600">{error}</p>}{errorDetails}
                     <div className="mt-4 flex gap-2 rounded-xl bg-emerald-50 p-2.5 text-[10px] text-emerald-800"><Upload size={14}/><span>The photo is sent securely for generation and is not stored by Microbreaks.</span></div>
                     <button disabled={!photo || busy} onClick={generateCharacter} className="mt-4 w-full py-3 rounded-xl bg-indigo-600 disabled:bg-gray-300 text-white text-sm font-bold flex justify-center gap-2"><Sparkles size={16}/>{busy ? 'Creating previews…' : 'Generate 2 previews'}</button>
                 </>}
                 {step === 'choices' && <>
                     <h2 className="text-lg font-black">Choose your character</h2><p className="mt-1 text-xs text-gray-500">After approval, we’ll create its walk, turn and session-ending poses.</p>
                     <div className="grid grid-cols-2 gap-3 mt-4">{choices.map((choice, i) => <button key={i} onClick={() => setSelected(i)} className={`relative overflow-hidden rounded-2xl border-2 ${selected === i ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-gray-100'}`}><img src={choice} className="aspect-[3/4] w-full object-contain bg-violet-50" alt={`Avatar option ${i + 1}`}/>{selected === i && <span className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-indigo-600 text-white"><Check size={16}/></span>}</button>)}</div>
-                    {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
+                    {error && <p className="mt-3 text-xs text-red-600">{error}</p>}{errorDetails}
                     <button onClick={generateMotionPack} className="mt-4 w-full py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold">Approve & create movements</button>
                     <button onClick={() => setStep('photo')} className="mt-2 w-full py-2.5 text-xs font-bold text-gray-600 flex justify-center gap-2"><RefreshCw size={14}/>Try another photo</button>
                 </>}
