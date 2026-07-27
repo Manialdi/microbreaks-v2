@@ -18,8 +18,7 @@ export default function SessionSummary({ onFinish }: { onFinish: () => void }) {
     const [insight] = useState(() => INSIGHTS[Math.floor(Math.random() * INSIGHTS.length)]);
 
     const handleBackToWork = () => {
-        // Close the side panel
-        window.close();
+        chrome.runtime.sendMessage({ action: 'SHOW_SESSION_OUTCOME_REQUEST', kind: 'complete' }, () => window.close());
     };
 
     return (

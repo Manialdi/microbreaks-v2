@@ -61,12 +61,12 @@ async function removeChromaBackground(base64Image: string) {
     return output.toString('base64');
 }
 
-async function requestAvatar(apiKey: string, photo: File, prompt: string, userHash: string) {
+async function requestAvatar(apiKey: string, photo: File, prompt: string, userHash: string, size = '1024x1536') {
     const form = new FormData();
     form.append('model', 'gpt-image-2');
     form.append('image', photo, 'reference-image');
     form.append('prompt', prompt);
-    form.append('size', '1024x1536');
+    form.append('size', size);
     form.append('quality', 'medium');
     form.append('output_format', 'webp');
     form.append('output_compression', '78');
@@ -113,14 +113,15 @@ export async function POST(request: NextRequest) {
         return safeJson('Invalid upload', 400);
     }
 
-    const photo = formData.get('photo');
+    const stage = String(formData.get('stage') || 'character');
+    const photo = stage === 'motion-pack' ? formData.get('avatar') : formData.get('photo');
     const style = String(formData.get('style') || '');
     const presentation = String(formData.get('presentation') || 'match');
     if (!(photo instanceof File)) return safeJson('A photo is required', 400);
     if (!ALLOWED_TYPES.has(photo.type) || photo.size < 1_000 || photo.size > MAX_PHOTO_BYTES) {
         return safeJson('Photo must be a JPG, PNG, or WebP under 6 MB', 400);
     }
-    if (!ALLOWED_STYLES.has(style) || !ALLOWED_PRESENTATIONS.has(presentation)) {
+    if (!ALLOWED_STYLES.has(style) || (stage === 'character' && !ALLOWED_PRESENTATIONS.has(presentation))) {
         return safeJson('Invalid avatar settings', 400);
     }
 
@@ -128,10 +129,40 @@ export async function POST(request: NextRequest) {
     if (!isSupportedImage(photoBytes, photo.type)) return safeJson('Photo content does not match its file type', 400);
     const safePhoto = new File([photoBytes], photo.type === 'image/png' ? 'photo.png' : photo.type === 'image/webp' ? 'photo.webp' : 'photo.jpg', { type: photo.type });
 
-    const batchesUsed = Number(user.app_metadata?.avatar_generation_batches || 0);
-    if (!Number.isSafeInteger(batchesUsed) || batchesUsed >= MAX_BATCHES) {
-        return safeJson('Your free avatar generations have been used', 429);
+    if (stage !== 'character' && stage !== 'motion-pack') return safeJson('Invalid generation stage', 400);
+
+    if (stage === 'motion-pack') {
+        const packsUsed = Number(user.app_metadata?.avatar_motion_packs || 0);
+        if (!Number.isSafeInteger(packsUsed) || packsUsed >= MAX_BATCHES) return safeJson('Your free movement packs have been used', 429);
+        const reservedPacks = packsUsed + 1;
+        const { error: reservePackError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+            app_metadata: { ...user.app_metadata, avatar_motion_packs: reservedPacks },
+        });
+        if (reservePackError) return safeJson('Could not reserve movement allowance', 503);
+
+        const identityRule = `Use the supplied approved avatar as the exact character reference. Preserve the same face, hair, glasses, skin tone, outfit, body proportions, colors and ${STYLE_PROMPTS[style]} rendering in every frame. Use a perfectly flat uniform #FF00FF background with no floor, shadows, scenery, text, borders or watermark. Keep the complete body visible at the same scale and baseline in every frame. Do not use magenta on the character.`;
+        const prompts = {
+            walk: `${identityRule} Create one horizontal sprite sheet containing exactly 8 equal-width sequential frames, left to right, of this character performing an elegant slow side-profile walk toward the left. Natural alternating arm swing, small confident steps, upright posture, no dance moves. Each panel contains exactly one complete character.`,
+            turn: `${identityRule} Create one horizontal sprite sheet containing exactly 4 equal-width sequential frames, left to right: side profile facing left, beginning to turn, three-quarter view, then standing front-facing toward the viewer. Arms rest naturally. Each panel contains exactly one complete character.`,
+            early: `${identityRule} Create one full-body pose of the character leaning into view from behind the right edge, friendly and reassuring, one hand lightly holding the edge.`,
+            complete: `${identityRule} Create one full-body pose of the character leaning into view from behind the right edge and giving a clear friendly thumbs-up toward the viewer.`,
+        };
+        const userHash = createHash('sha256').update(user.id).digest('hex').slice(0, 32);
+        try {
+            const [walk, turn, early, complete] = await Promise.all([
+                requestAvatar(openAiKey, safePhoto, prompts.walk, userHash, '1536x1024'),
+                requestAvatar(openAiKey, safePhoto, prompts.turn, userHash, '1536x1024'),
+                requestAvatar(openAiKey, safePhoto, prompts.early, userHash),
+                requestAvatar(openAiKey, safePhoto, prompts.complete, userHash),
+            ]);
+            return NextResponse.json({ motionPack: { walk, turn, early, complete }, packsUsed: reservedPacks }, { headers: corsHeaders });
+        } catch {
+            return safeJson('Movement generation could not be completed. Please try again later.', 502);
+        }
     }
+
+    const batchesUsed = Number(user.app_metadata?.avatar_generation_batches || 0);
+    if (!Number.isSafeInteger(batchesUsed) || batchesUsed >= MAX_BATCHES) return safeJson('Your free avatar generations have been used', 429);
 
     // Reserve the batch before calling a paid service. app_metadata cannot be modified by extension users.
     const reservedCount = batchesUsed + 1;

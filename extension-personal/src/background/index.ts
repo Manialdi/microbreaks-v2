@@ -194,16 +194,38 @@ async function showNotification() {
     });
 }
 
-async function showAvatarOnActiveChromeTab() {
+async function showAvatarOnActiveChromeTab(): Promise<boolean> {
     try {
-        const window = await chrome.windows.getLastFocused();
-        if (!window.focused) return;
+        // Recording controls and DevTools can temporarily take focus even while a
+        // normal Chrome page is visible. Always target the last normal window so
+        // the companion is not silently skipped at reminder time.
+        const window = await chrome.windows.getLastFocused({ windowTypes: ['normal'] });
         const tabs = await chrome.tabs.query({ active: true, windowId: window.id });
         const activeTab = tabs[0];
-        if (!activeTab?.id || !activeTab.url || /^(chrome|edge|about|devtools):/.test(activeTab.url)) return;
-        await chrome.tabs.sendMessage(activeTab.id, { action: 'SHOW_AVATAR_REMINDER' });
-    } catch {
+        // A tab ID is available without the broad `tabs` permission, while its
+        // URL may intentionally be hidden. Sending is safe: restricted pages
+        // simply reject the message and are handled by the catch below.
+        if (!activeTab?.id) return false;
+        const response = await chrome.tabs.sendMessage(activeTab.id, { action: 'SHOW_AVATAR_REMINDER' }) as { shown?: boolean } | undefined;
+        return response?.shown === true;
+    } catch (error) {
         // Restricted browser pages cannot host an extension content script.
+        console.warn('[Avatar] Could not show companion on the active tab.', error);
+        return false;
+    }
+}
+
+async function showSessionOutcomeOnActiveChromeTab(kind: 'early' | 'complete'): Promise<boolean> {
+    try {
+        const window = await chrome.windows.getLastFocused({ windowTypes: ['normal'] });
+        const tabs = await chrome.tabs.query({ active: true, windowId: window.id });
+        const activeTab = tabs[0];
+        if (!activeTab?.id) return false;
+        const response = await chrome.tabs.sendMessage(activeTab.id, { action: 'SHOW_SESSION_OUTCOME', kind }) as { shown?: boolean } | undefined;
+        return response?.shown === true;
+    } catch (error) {
+        console.warn('[Avatar] Could not show session outcome on the active tab.', error);
+        return false;
     }
 }
 
@@ -253,15 +275,15 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         // The scheduler ONLY creates alarms for valid times. 
         // So if an alarm fires, it IS a valid time (unless settings changed in the interim).
 
-        showNotification();
-        showAvatarOnActiveChromeTab();
+        const avatarShown = await showAvatarOnActiveChromeTab();
+        if (!avatarShown) await showNotification();
     }
 
     // HANDLING SNOOZE
     else if (alarm.name === ALARM_SNOOZE) {
         // Just show notification again
-        showNotification();
-        showAvatarOnActiveChromeTab();
+        const avatarShown = await showAvatarOnActiveChromeTab();
+        if (!avatarShown) await showNotification();
     }
 });
 
@@ -309,6 +331,18 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     }
     else if (message.action === 'AVATAR_DISMISS') {
         sendResponse({ status: 'dismissed' });
+    }
+    else if (message.action === 'SHOW_SESSION_OUTCOME_REQUEST') {
+        const kind = message.kind === 'complete' ? 'complete' : 'early';
+        showSessionOutcomeOnActiveChromeTab(kind).then(shown => sendResponse({ status: shown ? 'shown' : 'unavailable' }));
+        return true;
+    }
+    else if (message.action === 'PREVIEW_AVATAR_REMINDER') {
+        showAvatarOnActiveChromeTab().then(async shown => {
+            if (!shown) await showNotification();
+            sendResponse({ status: shown ? 'shown' : 'notification_fallback' });
+        });
+        return true;
     }
 });
 

@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Microbreaks - Personal",
-    "version": "1.0.9",
+    "version": "1.0.10",
     "description": "Your personal wellness coach for healthy work habits.",
     "action": {},
     "background": {
@@ -34,8 +34,12 @@
     },
     "host_permissions": [
         "https://*.supabase.co/*",
-        "https://www.micro-breaks.com/*"
+        "https://www.micro-breaks.com/*",
+        "https://*.avaturn.dev/*"
     ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'; frame-src https://*.avaturn.dev; connect-src 'self' https://*.avaturn.dev https://*.supabase.co https://www.micro-breaks.com"
+    },
     "web_accessible_resources": [
         {
             "resources": [

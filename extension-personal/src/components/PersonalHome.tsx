@@ -156,7 +156,17 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
             'avatar_data_url',
             'avatar_style',
             'avatar_presentation',
-            'avatar_generation_batches'
+            'avatar_generation_batches',
+            'avatar_3d_url',
+            'avatar_3d_id',
+            'avatar_3d_body_id',
+            'avatar_3d_gender',
+            'avatar_3d_supports_face_animation',
+            'avatar_kind'
+            ,'avatar_walk_sheet_url'
+            ,'avatar_turn_sheet_url'
+            ,'avatar_early_lean_url'
+            ,'avatar_complete_lean_url'
         ]);
         await supabase.auth.signOut();
     };
@@ -167,7 +177,7 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
 
     return (
         <div className="h-full bg-gray-50 flex flex-col relative overflow-hidden text-gray-800 font-sans">
-            {showAvatarStudio && <AvatarStudio onClose={() => setShowAvatarStudio(false)} onSaved={setAvatar} />}
+            {showAvatarStudio && <AvatarStudio onClose={() => setShowAvatarStudio(false)} onSaved={(nextAvatar) => setAvatar(nextAvatar)} />}
             {/* Header */}
             <div className="relative z-10 flex justify-between items-center p-6 pb-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md">
                 <div className="flex items-center gap-2">
@@ -217,11 +227,14 @@ export default function PersonalHome({ onStartBreak, user }: { onStartBreak: () 
                         {avatar ? <img src={avatar} alt="Your break buddy" className="w-full h-full object-contain bg-white" /> : <Sparkles className="text-violet-500" size={26} />}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs font-black text-gray-900">{avatar ? 'Your break buddy is ready' : 'Meet your break buddy'}</p>
-                        <p className="text-[10px] leading-relaxed text-gray-500 mt-0.5">{avatar ? 'It will greet you in reminders and breaks.' : 'Create a personal avatar from one photo.'}</p>
-                        <button onClick={() => setShowAvatarStudio(true)} className="mt-2 text-[10px] font-bold text-white bg-violet-600 hover:bg-violet-700 rounded-lg px-3 py-1.5">
-                            {avatar ? 'Change avatar' : 'Create free avatar'}
-                        </button>
+                        <p className="text-xs font-black text-gray-900">{avatar ? 'Your animated break buddy is ready' : 'Meet your break buddy'}</p>
+                        <p className="text-[10px] leading-relaxed text-gray-500 mt-0.5">{avatar ? 'It will walk into your reminders and celebrate completed breaks.' : 'Create a personal 2D character and movement pack from one photo.'}</p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                            {avatar && <button onClick={() => chrome.runtime.sendMessage({ action: 'PREVIEW_AVATAR_REMINDER' })} className="text-[10px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg px-3 py-1.5">Preview entrance</button>}
+                            <button onClick={() => setShowAvatarStudio(true)} className="text-[10px] font-bold text-white bg-violet-600 hover:bg-violet-700 rounded-lg px-3 py-1.5">
+                                {avatar ? 'Change avatar' : 'Create free avatar'}
+                            </button>
+                        </div>
                     </div>
                 </div>
 

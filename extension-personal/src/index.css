@@ -24,6 +24,13 @@ body {
 .avatar-enter { animation: avatar-enter 700ms cubic-bezier(.2,.9,.2,1) both; }
 .avatar-celebrate { animation: avatar-celebrate 850ms ease-in-out infinite; }
 
+.avaturn-creator-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .avatar-enter, .avatar-celebrate { animation: none; }
 }

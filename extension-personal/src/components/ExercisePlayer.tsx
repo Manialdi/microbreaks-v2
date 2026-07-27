@@ -38,7 +38,7 @@ const BENEFITS_MAP: Record<string, string[]> = {
     "Triceps Stretch": ["Relieves upper-arm tension", "Improves shoulder range of motion"]
 };
 
-export default function ExercisePlayer({ onComplete }: { onComplete: () => void }) {
+export default function ExercisePlayer({ onComplete, onEndEarly }: { onComplete: () => void; onEndEarly: () => void }) {
     const [exercise, setExercise] = useState<Exercise | null>(null);
     const [sessionTimeLeft, setSessionTimeLeft] = useState(300); // Total session time (default 5m)
     const [exerciseTimeLeft, setExerciseTimeLeft] = useState(60); // Current exercise timer
@@ -133,7 +133,7 @@ export default function ExercisePlayer({ onComplete }: { onComplete: () => void 
         if (sessionTimeLeft <= 10) {
             setIsSessionFinished(true);
         } else {
-            onComplete();
+            onEndEarly();
         }
     };
 
