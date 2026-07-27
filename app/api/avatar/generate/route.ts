@@ -7,7 +7,6 @@ export const runtime = 'nodejs';
 export const maxDuration = 120;
 
 const MAX_PHOTO_BYTES = 6 * 1024 * 1024;
-const MAX_BATCHES = 5;
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_STYLES = new Set(['illustrated', 'soft-3d', 'pixel', 'chibi']);
 const ALLOWED_PRESENTATIONS = new Set(['match', 'feminine', 'masculine', 'neutral']);
@@ -135,14 +134,6 @@ export async function POST(request: NextRequest) {
     if (stage !== 'character' && stage !== 'motion-pack') return safeJson('Invalid generation stage', 400);
 
     if (stage === 'motion-pack') {
-        const packsUsed = Number(user.app_metadata?.avatar_motion_packs || 0);
-        if (!Number.isSafeInteger(packsUsed) || packsUsed >= MAX_BATCHES) return safeJson('Your free movement packs have been used', 429);
-        const reservedPacks = packsUsed + 1;
-        const { error: reservePackError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-            app_metadata: { ...user.app_metadata, avatar_motion_packs: reservedPacks },
-        });
-        if (reservePackError) return safeJson('Could not reserve movement allowance', 503);
-
         const identityRule = `Use the supplied approved avatar as the exact character reference. Preserve the same face, hair, glasses, skin tone, outfit, body proportions, colors and ${STYLE_PROMPTS[style]} rendering in every frame. Use a perfectly flat uniform #FF00FF background with no floor, shadows, scenery, text, borders or watermark. Keep the complete body visible at the same scale and baseline in every frame. Do not use magenta on the character.`;
         const prompts = {
             walk: `${identityRule} Create one horizontal sprite sheet containing exactly 8 equal-width sequential frames, left to right, of this character performing an elegant slow side-profile walk toward the left. Natural alternating arm swing, small confident steps, upright posture, no dance moves. Each panel contains exactly one complete character.`,
@@ -158,25 +149,11 @@ export async function POST(request: NextRequest) {
                 requestAvatar(openAiKey, safePhoto, prompts.early, userHash, '1024x1536', 360),
                 requestAvatar(openAiKey, safePhoto, prompts.complete, userHash, '1024x1536', 360),
             ]);
-            return NextResponse.json({ motionPack: { walk, turn, early, complete }, packsUsed: reservedPacks }, { headers: corsHeaders });
+            return NextResponse.json({ motionPack: { walk, turn, early, complete } }, { headers: corsHeaders });
         } catch {
-            // Failed provider/platform attempts must not consume the user's testing allowance.
-            await supabaseAdmin.auth.admin.updateUserById(user.id, {
-                app_metadata: { ...user.app_metadata, avatar_motion_packs: packsUsed },
-            });
             return safeJson('Movement generation could not be completed. Please try again later.', 502);
         }
     }
-
-    const batchesUsed = Number(user.app_metadata?.avatar_generation_batches || 0);
-    if (!Number.isSafeInteger(batchesUsed) || batchesUsed >= MAX_BATCHES) return safeJson('Your free avatar generations have been used', 429);
-
-    // Reserve the batch before calling a paid service. app_metadata cannot be modified by extension users.
-    const reservedCount = batchesUsed + 1;
-    const { error: reserveError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-        app_metadata: { ...user.app_metadata, avatar_generation_batches: reservedCount },
-    });
-    if (reserveError) return safeJson('Could not reserve generation allowance', 503);
 
     const presentationInstruction = presentation === 'match'
         ? 'Match the apparent presentation in the reference photo.'
@@ -190,7 +167,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const avatars = await Promise.all(prompts.map(prompt => requestAvatar(openAiKey, safePhoto, prompt, userHash)));
-        return NextResponse.json({ avatars, batchesUsed: reservedCount, batchesRemaining: MAX_BATCHES - reservedCount }, { headers: corsHeaders });
+        return NextResponse.json({ avatars }, { headers: corsHeaders });
     } catch {
         // Do not return provider details or log user images/tokens.
         return safeJson('Avatar generation could not be completed. Please try again later.', 502);
