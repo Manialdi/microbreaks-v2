@@ -39,7 +39,7 @@ function safeJson(error: string, status: number) {
     return NextResponse.json({ error }, { status, headers: corsHeaders });
 }
 
-async function removeChromaBackground(base64Image: string, maxWidth: number) {
+async function removeChromaBackground(base64Image: string, maxWidth: number, frameCount = 1) {
     const source = Buffer.from(base64Image, 'base64');
     const { data, info } = await sharp(source).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     for (let index = 0; index < data.length; index += 4) {
@@ -56,14 +56,40 @@ async function removeChromaBackground(base64Image: string, maxWidth: number) {
             data[index + 2] = Math.min(blue, neutralEdge);
         }
     }
-    const output = await sharp(data, { raw: info })
-        .resize({ width: maxWidth, withoutEnlargement: true })
-        .webp({ quality: 68, alphaQuality: 82, effort: 5 })
-        .toBuffer();
+    const transparentSource = await sharp(data, { raw: info }).png().toBuffer();
+    let output: Buffer;
+    if (frameCount > 1) {
+        // The image API returns a standard landscape canvas. CSS sprite playback,
+        // however, needs tall equal-ratio cells. Extract and contain each panel
+        // independently so no character is stretched or changes size mid-motion.
+        const frameWidth = 160;
+        const frameHeight = 256;
+        const panelWidth = Math.floor(info.width / frameCount);
+        const composites = await Promise.all(Array.from({ length: frameCount }, async (_, index) => {
+            const left = index * panelWidth;
+            const width = index === frameCount - 1 ? info.width - left : panelWidth;
+            const panel = await sharp(transparentSource)
+                .extract({ left, top: 0, width, height: info.height })
+                .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                .resize({ width: frameWidth - 12, height: frameHeight - 8, fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                .png()
+                .toBuffer();
+            return { input: panel, left: index * frameWidth + 6, top: 4 };
+        }));
+        output = await sharp({ create: { width: frameWidth * frameCount, height: frameHeight, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+            .composite(composites)
+            .webp({ quality: 72, alphaQuality: 86, effort: 5 })
+            .toBuffer();
+    } else {
+        output = await sharp(transparentSource)
+            .resize({ width: maxWidth, withoutEnlargement: true })
+            .webp({ quality: 68, alphaQuality: 82, effort: 5 })
+            .toBuffer();
+    }
     return output.toString('base64');
 }
 
-async function requestAvatar(apiKey: string, photo: File, prompt: string, userHash: string, size = '1024x1536', outputWidth = 640) {
+async function requestAvatar(apiKey: string, photo: File, prompt: string, userHash: string, size = '1024x1536', outputWidth = 640, frameCount = 1) {
     const form = new FormData();
     form.append('model', 'gpt-image-2');
     form.append('image', photo, 'reference-image');
@@ -86,7 +112,7 @@ async function requestAvatar(apiKey: string, photo: File, prompt: string, userHa
     const result = await response.json() as { data?: Array<{ b64_json?: string }> };
     const image = result.data?.[0]?.b64_json;
     if (!image) throw new Error('Image generation returned no image');
-    const transparentImage = await removeChromaBackground(image, outputWidth);
+    const transparentImage = await removeChromaBackground(image, outputWidth, frameCount);
     return `data:image/webp;base64,${transparentImage}`;
 }
 
@@ -144,8 +170,8 @@ export async function POST(request: NextRequest) {
         const userHash = createHash('sha256').update(user.id).digest('hex').slice(0, 32);
         try {
             const [walk, turn, early, complete] = await Promise.all([
-                requestAvatar(openAiKey, safePhoto, prompts.walk, userHash, '1536x1024', 960),
-                requestAvatar(openAiKey, safePhoto, prompts.turn, userHash, '1536x1024', 720),
+                requestAvatar(openAiKey, safePhoto, prompts.walk, userHash, '1536x1024', 1280, 8),
+                requestAvatar(openAiKey, safePhoto, prompts.turn, userHash, '1536x1024', 640, 4),
                 requestAvatar(openAiKey, safePhoto, prompts.early, userHash, '1024x1536', 360),
                 requestAvatar(openAiKey, safePhoto, prompts.complete, userHash, '1024x1536', 360),
             ]);
