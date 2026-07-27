@@ -68,15 +68,29 @@ async function removeChromaBackground(base64Image: string, maxWidth: number, fra
         const normalizedPanels = await Promise.all(Array.from({ length: frameCount }, async (_, index) => {
             const left = index * panelWidth;
             const width = index === frameCount - 1 ? info.width - left : panelWidth;
-            const extracted = sharp(transparentSource).extract({ left, top: 0, width, height: info.height });
-            const stats = await extracted.clone().stats();
-            const alpha = stats.channels[3];
-            if (!alpha || alpha.max === 0 || alpha.sum < 500) return null;
-            return extracted
-                .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
-                .resize({ width: frameWidth - 12, height: frameHeight - 8, fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+            // Materialize each crop before inspecting and transforming it. Reusing a
+            // lazy Sharp pipeline for both stats() and trim() can fail in production.
+            const panel = await sharp(transparentSource)
+                .extract({ left, top: 0, width, height: info.height })
                 .png()
                 .toBuffer();
+            const stats = await sharp(panel).stats();
+            const alpha = stats.channels[3];
+            if (!alpha || alpha.max === 0 || alpha.sum < 500) return null;
+            try {
+                return await sharp(panel)
+                    .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                    .resize({ width: frameWidth - 12, height: frameHeight - 8, fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                    .png()
+                    .toBuffer();
+            } catch {
+                // A partially transparent or unusual generated panel should still
+                // produce a usable frame rather than failing the entire motion pack.
+                return sharp(panel)
+                    .resize({ width: frameWidth - 12, height: frameHeight - 8, fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                    .png()
+                    .toBuffer();
+            }
         }));
         const validIndexes = normalizedPanels.flatMap((panel, index) => panel ? [index] : []);
         if (validIndexes.length === 0) throw new Error('Generated sprite sheet contained no usable frames');
