@@ -14,6 +14,18 @@ const STYLES: { id: AvatarStyle; label: string; image: string }[] = [
 
 type MotionPack = { walk: string; turn: string; early: string; complete: string };
 
+function dataUrlToBlob(dataUrl: string) {
+    const comma = dataUrl.indexOf(',');
+    if (comma < 0) throw new Error('The selected avatar image is invalid.');
+    const metadata = dataUrl.slice(0, comma);
+    const mime = metadata.match(/^data:([^;,]+)/)?.[1] || 'image/webp';
+    const encoded = dataUrl.slice(comma + 1);
+    const binary = metadata.includes(';base64') ? atob(encoded) : decodeURIComponent(encoded);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    return new Blob([bytes], { type: mime });
+}
+
 export default function AvatarStudio({ onClose, onSaved }: { onClose: () => void; onSaved: (avatar: string, kind?: 'image') => void }) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [step, setStep] = useState<Step>('demo');
@@ -75,7 +87,8 @@ export default function AvatarStudio({ onClose, onSaved }: { onClose: () => void
         const startedAt = Date.now();
         let status: number | null = null;
         try {
-            const avatarBlob = await (await fetch(avatar)).blob();
+            // Avoid fetch(data:...), which is blocked by the extension's CSP.
+            const avatarBlob = dataUrlToBlob(avatar);
             const body = new FormData();
             body.append('stage', 'motion-pack');
             body.append('avatar', avatarBlob, 'approved-avatar.webp');
