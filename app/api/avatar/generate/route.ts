@@ -99,13 +99,13 @@ async function removeChromaBackground(base64Image: string, maxWidth: number, fra
     return output.toString('base64');
 }
 
-async function requestAvatar(apiKey: string, photo: File, prompt: string, userHash: string, size = '1024x1536', outputWidth = 640, frameCount = 1) {
+async function requestAvatar(apiKey: string, photo: File, prompt: string, userHash: string, size = '1024x1536', outputWidth = 640, frameCount = 1, quality = 'medium') {
     const form = new FormData();
     form.append('model', 'gpt-image-2');
     form.append('image', photo, 'reference-image');
     form.append('prompt', prompt);
     form.append('size', size);
-    form.append('quality', 'medium');
+    form.append('quality', quality);
     form.append('output_format', 'webp');
     form.append('output_compression', '78');
     form.append('user', userHash);
@@ -118,12 +118,22 @@ async function requestAvatar(apiKey: string, photo: File, prompt: string, userHa
         cache: 'no-store',
     });
 
-    if (!response.ok) throw new Error(`Image generation failed (${response.status})`);
+    if (!response.ok) throw new Error(`IMAGE_PROVIDER_${response.status}`);
     const result = await response.json() as { data?: Array<{ b64_json?: string }> };
     const image = result.data?.[0]?.b64_json;
-    if (!image) throw new Error('Image generation returned no image');
+    if (!image) throw new Error('IMAGE_PROVIDER_EMPTY');
     const transparentImage = await removeChromaBackground(image, outputWidth, frameCount);
     return `data:image/webp;base64,${transparentImage}`;
+}
+
+function safeMotionErrorCode(cause: unknown) {
+    const message = cause instanceof Error ? cause.message : '';
+    if (message.includes('IMAGE_PROVIDER_429')) return 'provider_rate_limited';
+    if (/IMAGE_PROVIDER_5\d\d/.test(message)) return 'provider_unavailable';
+    if (message.includes('IMAGE_PROVIDER_')) return 'provider_rejected_request';
+    if (message.includes('no usable frames')) return 'empty_sprite_sheet';
+    if (cause instanceof DOMException && cause.name === 'TimeoutError') return 'provider_timeout';
+    return 'sprite_processing_failed';
 }
 
 export async function POST(request: NextRequest) {
@@ -179,15 +189,25 @@ export async function POST(request: NextRequest) {
         };
         const userHash = createHash('sha256').update(user.id).digest('hex').slice(0, 32);
         try {
-            const [walk, turn, early, complete] = await Promise.all([
-                requestAvatar(openAiKey, safePhoto, prompts.walk, userHash, '1536x1024', 1280, 8),
-                requestAvatar(openAiKey, safePhoto, prompts.turn, userHash, '1536x1024', 640, 4),
-                requestAvatar(openAiKey, safePhoto, prompts.early, userHash, '1024x1536', 360),
-                requestAvatar(openAiKey, safePhoto, prompts.complete, userHash, '1024x1536', 360),
+            // Keep provider concurrency low. Four simultaneous image edits were
+            // intermittently failing the entire pack when a single job was throttled.
+            const [walk, turn] = await Promise.all([
+                requestAvatar(openAiKey, safePhoto, prompts.walk, userHash, '1536x1024', 1280, 8, 'low'),
+                requestAvatar(openAiKey, safePhoto, prompts.turn, userHash, '1536x1024', 640, 4, 'low'),
+            ]);
+            const [early, complete] = await Promise.all([
+                requestAvatar(openAiKey, safePhoto, prompts.early, userHash, '1024x1536', 360, 1, 'low'),
+                requestAvatar(openAiKey, safePhoto, prompts.complete, userHash, '1024x1536', 360, 1, 'low'),
             ]);
             return NextResponse.json({ motionPack: { walk, turn, early, complete } }, { headers: corsHeaders });
-        } catch {
-            return safeJson('Movement generation could not be completed. Please try again later.', 502);
+        } catch (cause) {
+            const code = safeMotionErrorCode(cause);
+            const requestId = request.headers.get('x-request-id') || 'unknown';
+            console.error('[avatar-motion]', { requestId, code });
+            return NextResponse.json(
+                { error: 'Movement generation could not be completed. Please try again later.', code },
+                { status: 502, headers: corsHeaders },
+            );
         }
     }
 
