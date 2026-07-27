@@ -86,6 +86,7 @@ export default function AvatarStudio({ onClose, onSaved }: { onClose: () => void
         const requestId = crypto.randomUUID();
         const startedAt = Date.now();
         let status: number | null = null;
+        let serverCode: string | null = null;
         try {
             // Avoid fetch(data:...), which is blocked by the extension's CSP.
             const avatarBlob = dataUrlToBlob(avatar);
@@ -95,7 +96,8 @@ export default function AvatarStudio({ onClose, onSaved }: { onClose: () => void
             body.append('style', style);
             const response = await fetch('https://www.micro-breaks.com/api/avatar/generate', { method: 'POST', headers: { Authorization: `Bearer ${await token()}`, 'X-Request-ID': requestId }, body });
             status = response.status;
-            const result = await response.json() as { motionPack?: MotionPack; error?: string };
+            const result = await response.json() as { motionPack?: MotionPack; error?: string; code?: string };
+            serverCode = result.code || null;
             if (!response.ok || !result.motionPack) throw new Error(result.error || 'Movement generation failed.');
             await chrome.storage.local.set({
                 avatar_data_url: avatar,
@@ -110,7 +112,7 @@ export default function AvatarStudio({ onClose, onSaved }: { onClose: () => void
             onSaved(avatar, 'image'); setStep('ready');
         } catch (cause) {
             setError(cause instanceof Error ? cause.message : 'Movement generation failed.');
-            setDiagnostics(makeDiagnostics('motion-pack', requestId, startedAt, status, cause));
+            setDiagnostics(makeDiagnostics('motion-pack', requestId, startedAt, status, cause, serverCode));
             setStep('choices');
         }
         finally { setBusy(false); }
@@ -124,7 +126,7 @@ export default function AvatarStudio({ onClose, onSaved }: { onClose: () => void
         onClose();
     };
 
-    const makeDiagnostics = (stage: string, requestId: string, startedAt: number, status: number | null, cause: unknown) => JSON.stringify({
+    const makeDiagnostics = (stage: string, requestId: string, startedAt: number, status: number | null, cause: unknown, serverCode: string | null = null) => JSON.stringify({
         product: 'Microbreaks Personal',
         extensionVersion: chrome.runtime.getManifest().version,
         stage,
@@ -132,6 +134,7 @@ export default function AvatarStudio({ onClose, onSaved }: { onClose: () => void
         timestamp: new Date().toISOString(),
         durationMs: Date.now() - startedAt,
         httpStatus: status,
+        serverCode,
         online: navigator.onLine,
         errorType: cause instanceof Error ? cause.name : 'UnknownError',
         errorMessage: cause instanceof Error ? cause.message : String(cause),
