@@ -65,17 +65,27 @@ async function removeChromaBackground(base64Image: string, maxWidth: number, fra
         const frameWidth = 160;
         const frameHeight = 256;
         const panelWidth = Math.floor(info.width / frameCount);
-        const composites = await Promise.all(Array.from({ length: frameCount }, async (_, index) => {
+        const normalizedPanels = await Promise.all(Array.from({ length: frameCount }, async (_, index) => {
             const left = index * panelWidth;
             const width = index === frameCount - 1 ? info.width - left : panelWidth;
-            const panel = await sharp(transparentSource)
-                .extract({ left, top: 0, width, height: info.height })
+            const extracted = sharp(transparentSource).extract({ left, top: 0, width, height: info.height });
+            const stats = await extracted.clone().stats();
+            const alpha = stats.channels[3];
+            if (!alpha || alpha.max === 0 || alpha.sum < 500) return null;
+            return extracted
                 .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
                 .resize({ width: frameWidth - 12, height: frameHeight - 8, fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
                 .png()
                 .toBuffer();
-            return { input: panel, left: index * frameWidth + 6, top: 4 };
         }));
+        const validIndexes = normalizedPanels.flatMap((panel, index) => panel ? [index] : []);
+        if (validIndexes.length === 0) throw new Error('Generated sprite sheet contained no usable frames');
+        const composites = normalizedPanels.map((panel, index) => {
+            const nearestIndex = panel ? index : validIndexes.reduce((nearest, candidate) =>
+                Math.abs(candidate - index) < Math.abs(nearest - index) ? candidate : nearest
+            , validIndexes[0]);
+            return { input: panel || normalizedPanels[nearestIndex]!, left: index * frameWidth + 6, top: 4 };
+        });
         output = await sharp({ create: { width: frameWidth * frameCount, height: frameHeight, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
             .composite(composites)
             .webp({ quality: 72, alphaQuality: 86, effort: 5 })
