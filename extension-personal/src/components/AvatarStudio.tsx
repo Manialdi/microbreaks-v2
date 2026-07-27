@@ -49,7 +49,7 @@ export default function AvatarStudio({ onClose, onSaved }: { onClose: () => void
     };
 
     const generateCharacter = async () => {
-        if (!photoFile || batchesUsed >= 2) return;
+        if (!photoFile || batchesUsed >= 5) return;
         setBusy(true); setError('');
         try {
             const body = new FormData();
@@ -129,14 +129,14 @@ export default function AvatarStudio({ onClose, onSaved }: { onClose: () => void
                     <p className="mt-1 text-[10px] text-gray-400">This only guides the character’s visual presentation; it is not asking for the person’s gender identity.</p>
                     {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
                     <div className="mt-4 flex gap-2 rounded-xl bg-emerald-50 p-2.5 text-[10px] text-emerald-800"><Upload size={14}/><span>The photo is sent securely for generation and is not stored by Microbreaks.</span></div>
-                    <button disabled={!photo || busy || batchesUsed >= 2} onClick={generateCharacter} className="mt-4 w-full py-3 rounded-xl bg-indigo-600 disabled:bg-gray-300 text-white text-sm font-bold flex justify-center gap-2"><Sparkles size={16}/>{busy ? 'Creating previews…' : batchesUsed >= 2 ? 'Free generations used' : 'Generate 2 previews'}</button>
+                    <button disabled={!photo || busy || batchesUsed >= 5} onClick={generateCharacter} className="mt-4 w-full py-3 rounded-xl bg-indigo-600 disabled:bg-gray-300 text-white text-sm font-bold flex justify-center gap-2"><Sparkles size={16}/>{busy ? 'Creating previews…' : batchesUsed >= 5 ? 'Free generations used' : `Generate 2 previews · ${5 - batchesUsed} free left`}</button>
                 </>}
                 {step === 'choices' && <>
                     <h2 className="text-lg font-black">Choose your character</h2><p className="mt-1 text-xs text-gray-500">After approval, we’ll create its walk, turn and session-ending poses.</p>
                     <div className="grid grid-cols-2 gap-3 mt-4">{choices.map((choice, i) => <button key={i} onClick={() => setSelected(i)} className={`relative overflow-hidden rounded-2xl border-2 ${selected === i ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-gray-100'}`}><img src={choice} className="aspect-[3/4] w-full object-contain bg-violet-50" alt={`Avatar option ${i + 1}`}/>{selected === i && <span className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-indigo-600 text-white"><Check size={16}/></span>}</button>)}</div>
                     {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
                     <button onClick={generateMotionPack} className="mt-4 w-full py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold">Approve & create movements</button>
-                    <button disabled={batchesUsed >= 2} onClick={() => setStep('photo')} className="mt-2 w-full py-2.5 text-xs font-bold text-gray-600 disabled:text-gray-300 flex justify-center gap-2"><RefreshCw size={14}/>{batchesUsed >= 2 ? 'Free retry used' : 'Try another photo'}</button>
+                    <button disabled={batchesUsed >= 5} onClick={() => setStep('photo')} className="mt-2 w-full py-2.5 text-xs font-bold text-gray-600 disabled:text-gray-300 flex justify-center gap-2"><RefreshCw size={14}/>{batchesUsed >= 5 ? 'Free generations used' : 'Try another photo'}</button>
                 </>}
                 {step === 'motion' && <div className="py-16 text-center"><RefreshCw className="mx-auto animate-spin text-indigo-600"/><h2 className="mt-5 text-lg font-black">Creating your movement pack</h2><p className="mt-2 text-xs text-gray-500">Generating a consistent walk, turn and two ending poses. This usually takes 1–3 minutes.</p></div>}
                 {step === 'ready' && <div className="py-10 text-center"><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600"><Check size={32}/></span><h2 className="mt-4 text-xl font-black">Your buddy is ready</h2><p className="mt-2 text-xs text-gray-500">The same personalized character will now appear throughout the reminder sequence.</p><button onClick={() => chrome.runtime.sendMessage({ action: 'PREVIEW_AVATAR_REMINDER' })} className="mt-5 w-full py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold">Preview entrance</button><button onClick={onClose} className="mt-2 w-full py-2.5 text-xs font-bold text-gray-600">Back to dashboard</button></div>}

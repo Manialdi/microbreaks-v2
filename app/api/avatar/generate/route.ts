@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 120;
 
 const MAX_PHOTO_BYTES = 6 * 1024 * 1024;
-const MAX_BATCHES = 2;
+const MAX_BATCHES = 5;
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const ALLOWED_STYLES = new Set(['illustrated', 'soft-3d', 'pixel', 'chibi']);
 const ALLOWED_PRESENTATIONS = new Set(['match', 'feminine', 'masculine', 'neutral']);
