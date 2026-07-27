@@ -40,7 +40,7 @@ function safeJson(error: string, status: number) {
     return NextResponse.json({ error }, { status, headers: corsHeaders });
 }
 
-async function removeChromaBackground(base64Image: string) {
+async function removeChromaBackground(base64Image: string, maxWidth: number) {
     const source = Buffer.from(base64Image, 'base64');
     const { data, info } = await sharp(source).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     for (let index = 0; index < data.length; index += 4) {
@@ -57,11 +57,14 @@ async function removeChromaBackground(base64Image: string) {
             data[index + 2] = Math.min(blue, neutralEdge);
         }
     }
-    const output = await sharp(data, { raw: info }).webp({ quality: 82, alphaQuality: 92 }).toBuffer();
+    const output = await sharp(data, { raw: info })
+        .resize({ width: maxWidth, withoutEnlargement: true })
+        .webp({ quality: 68, alphaQuality: 82, effort: 5 })
+        .toBuffer();
     return output.toString('base64');
 }
 
-async function requestAvatar(apiKey: string, photo: File, prompt: string, userHash: string, size = '1024x1536') {
+async function requestAvatar(apiKey: string, photo: File, prompt: string, userHash: string, size = '1024x1536', outputWidth = 640) {
     const form = new FormData();
     form.append('model', 'gpt-image-2');
     form.append('image', photo, 'reference-image');
@@ -84,7 +87,7 @@ async function requestAvatar(apiKey: string, photo: File, prompt: string, userHa
     const result = await response.json() as { data?: Array<{ b64_json?: string }> };
     const image = result.data?.[0]?.b64_json;
     if (!image) throw new Error('Image generation returned no image');
-    const transparentImage = await removeChromaBackground(image);
+    const transparentImage = await removeChromaBackground(image, outputWidth);
     return `data:image/webp;base64,${transparentImage}`;
 }
 
@@ -150,13 +153,17 @@ export async function POST(request: NextRequest) {
         const userHash = createHash('sha256').update(user.id).digest('hex').slice(0, 32);
         try {
             const [walk, turn, early, complete] = await Promise.all([
-                requestAvatar(openAiKey, safePhoto, prompts.walk, userHash, '1536x1024'),
-                requestAvatar(openAiKey, safePhoto, prompts.turn, userHash, '1536x1024'),
-                requestAvatar(openAiKey, safePhoto, prompts.early, userHash),
-                requestAvatar(openAiKey, safePhoto, prompts.complete, userHash),
+                requestAvatar(openAiKey, safePhoto, prompts.walk, userHash, '1536x1024', 960),
+                requestAvatar(openAiKey, safePhoto, prompts.turn, userHash, '1536x1024', 720),
+                requestAvatar(openAiKey, safePhoto, prompts.early, userHash, '1024x1536', 360),
+                requestAvatar(openAiKey, safePhoto, prompts.complete, userHash, '1024x1536', 360),
             ]);
             return NextResponse.json({ motionPack: { walk, turn, early, complete }, packsUsed: reservedPacks }, { headers: corsHeaders });
         } catch {
+            // Failed provider/platform attempts must not consume the user's testing allowance.
+            await supabaseAdmin.auth.admin.updateUserById(user.id, {
+                app_metadata: { ...user.app_metadata, avatar_motion_packs: packsUsed },
+            });
             return safeJson('Movement generation could not be completed. Please try again later.', 502);
         }
     }
